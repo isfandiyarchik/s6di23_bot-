@@ -2,9 +2,9 @@ from database import db_cursor, now_uz
 from handlers.common import (
     is_admin, check_access,
     parse_birth_date, clean_hemis,
-    back_menu, student_submenu, admin_menu,
-    _state_cache, _state_cache_lock
+    back_menu, student_submenu, admin_menu
 )
+from database import clear_user_state
 
 def register(bot):
     ca = check_access(bot)
@@ -24,7 +24,7 @@ def register(bot):
         with db_cursor() as (_, cursor):
             cursor.execute("SELECT id,full_name,username FROM students ORDER BY full_name")
             rows = cursor.fetchall()
-        header = ("➕ <b>Студент қосыу / Өзгертиу:</b>\n\n🆕 <b>Жаңа қосыу:</b>\n"
+        header = ("➕ <b>Студент қосыу / Өзгертиу:</b>\n\n🆕 <b>Таза қосыу:</b>\n"
                   "<code>таза;ФИО;Тууылған күни;Тел;HEMIS;TelegramID</code>\n\n"
                   "✏️ <b>Өзгертиу:</b> студент ID-ін жазыңыз\n" + "─"*30 + "\n")
         if not rows:
@@ -35,7 +35,7 @@ def register(bot):
             line = f"{i}. 👤 <b>{r[1] or '—'}</b>\n    🆔 <code>{r[0]}</code> | {'@'+r[2] if r[2] else 'username жоқ'}\n"
             if len(cur)+len(line) > 3800: chunks.append(cur); cur = ""
             cur += line
-        cur += "─"*30 + "\n⬇️ <b>ID жазыңыз ямаса жаңа студент форматын жибериңиз:</b>"
+        cur += "─"*30 + "\n⬇️ <b>ID жазыңыз ямаса таза студент форматын жибериңиз:</b>"
         chunks.append(cur)
         for chunk in chunks[:-1]: bot.send_message(message.chat.id, chunk)
         msg = bot.send_message(message.chat.id, chunks[-1], reply_markup=back_menu())
@@ -52,7 +52,7 @@ def register(bot):
                     "❌ Формат:\n<code>таза;ФИО;Тууылған күни;Тел;HEMIS;TelegramID</code>", reply_markup=back_menu())
                 bot.register_next_step_handler(msg, student_add_or_edit); return
             if not parts[5].lstrip("-").isdigit():
-                msg = bot.send_message(message.chat.id, "❌ TelegramID тек сан болуы керек!", reply_markup=back_menu())
+                msg = bot.send_message(message.chat.id, "❌ TelegramID тек сан болыуы керек!", reply_markup=back_menu())
                 bot.register_next_step_handler(msg, student_add_or_edit); return
             fn = parts[1]
             bd = parse_birth_date(parts[2]) if len(parts) > 2 else ""
@@ -108,7 +108,7 @@ def register(bot):
             bot.send_message(message.chat.id, "👤 Студент басқарыу", reply_markup=student_submenu()); return
         try:
             parts = [p.strip() for p in message.text.split(";")]
-            if len(parts) != 4: raise ValueError("4 бөлек болуы керек")
+            if len(parts) != 4: raise ValueError("4 бөлек болыуы керек")
             nf = parts[0] if parts[0] != "—" else old_fn
             nb = parse_birth_date(parts[1]) if parts[1] != "—" else old_bd
             np_ = parts[2] if parts[2] != "—" else old_ph
@@ -164,8 +164,8 @@ def register(bot):
                 cursor.execute("DELETE FROM blocked_users WHERE user_id=%s", (sid,))
                 cursor.execute("DELETE FROM user_states WHERE user_id=%s", (sid,))
                 conn.commit()
-            with _state_cache_lock:
-                _state_cache.pop(sid, None)
+            with _blocked_cache_lock:
+                pass  # state cache handled by DB
             bot.send_message(message.chat.id, f"✅ <b>{row[0]}</b> өширилди.", reply_markup=student_submenu())
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=student_submenu())
