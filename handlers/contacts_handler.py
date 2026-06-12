@@ -20,13 +20,14 @@ def register(bot):
         mugallim = [(r[1],r[2]) for r in rows if r[0]=="mugallim"]
         text = "📞 <b>Байланыс</b>\n\n"
         if dekanat:
-            text += "🏛 <b>Деканат:</b>\n"
+            text += "🏛 <b>Деканат:</b>\n" + "─"*25 + "\n"
             for name, phone in dekanat:
-                text += f"  👤 {name}\n  📞 <code>{phone}</code>\n\n"
+                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + "─"*25 + "\n"
+            text += "\n"
         if mugallim:
-            text += "👨‍🏫 <b>Муғаллимлер:</b>\n"
+            text += "👨‍🏫 <b>Муғаллимлер:</b>\n" + "─"*25 + "\n"
             for name, phone in mugallim:
-                text += f"  👤 {name}\n  📞 <code>{phone}</code>\n\n"
+                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + "─"*25 + "\n"
         bot.send_message(message.chat.id, text, reply_markup=main_menu(message.from_user.id))
 
     @bot.message_handler(func=lambda m: m.text == "📞 Байланыс басқарыу")
@@ -112,4 +113,3 @@ def register(bot):
                     bot.send_message(message.chat.id, f"✅ <b>{row[0]}</b> өширилди.", reply_markup=contacts_submenu())
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=contacts_submenu())
-
