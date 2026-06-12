@@ -31,3 +31,51 @@ def register(bot):
             "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлыман.\nБөлимди таңлаңыз:",
             reply_markup=main_menu(uid))
 
+    @bot.message_handler(commands=["help"])
+    def help_cmd(message):
+        uid = message.from_user.id
+        if is_blocked(uid): return
+        text = (
+            "📋 <b>Бот командалары:</b>\n\n"
+            "/start — Ботты баслау\n"
+            "/help — Көмек\n"
+            "/ai — AI менен сөйлесиу\n"
+            "/info — Бот ҳаккында мағлыумат\n\n"
+            "📌 <b>Менюлерди қолланыңыз!</b>"
+        )
+        bot.send_message(message.chat.id, text, reply_markup=main_menu(uid))
+
+    @bot.message_handler(commands=["ai"])
+    def ai_cmd(message):
+        uid = message.from_user.id
+        if is_blocked(uid): return
+        from database import set_user_state
+        from telebot import types
+        set_user_state(uid, "ai_chat")
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        markup.row("🗑 Тарихты тазалау")
+        markup.row("⬅️ Артқа")
+        bot.send_message(message.chat.id,
+            "🤖 <b>AI Көмекши иске қосылды!</b>\n\n"
+            "✏️ Сорауыңызды жазыңыз.\n"
+            "🌐 Жууаплар қарақалпақша берилетин болады.",
+            reply_markup=markup)
+
+    @bot.message_handler(commands=["info"])
+    def info_cmd(message):
+        uid = message.from_user.id
+        if is_blocked(uid): return
+        text = (
+            "🤖 <b>S6-DI-23 Telegram Боты</b>\n\n"
+            "👥 Бул бот S6-DI-23 студент группасы үшын исленди.\n\n"
+            "⚙️ <b>Мүмкинликлер:</b>\n"
+            "📅 Сабақ кестеси\n"
+            "📚 Оқыу материаллары\n"
+            "📷 Галерея\n"
+            "📰 Жаңалықлар\n"
+            "💰 Контракт ҳалаты\n"
+            "📊 Барлау\n"
+            "🤖 AI Көмекши\n\n"
+            "📌 <b>Версия:</b> 2.0"
+        )
+        bot.send_message(message.chat.id, text, reply_markup=main_menu(uid))
