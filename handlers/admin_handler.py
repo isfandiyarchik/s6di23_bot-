@@ -101,11 +101,23 @@ def register(bot):
                 cursor.execute("SELECT COUNT(*) FROM suggestions"); sg=cursor.fetchone()[0]
                 cursor.execute("SELECT COUNT(DISTINCT date) FROM attendance"); ad=cursor.fetchone()[0]
                 cursor.execute("SELECT COUNT(*) FROM blocked_users"); bl=cursor.fetchone()[0]
-            bot.send_message(message.chat.id,
-                f"📈 <b>Статистика:</b>\n\n👥 Студентлер: <b>{s}</b>\n📅 Сабақлар: <b>{l}</b>\n"
-                f"📰 Жаңалықлар: <b>{n}</b>\n📚 Материаллар: <b>{mat}</b>\n🎞 Галерея: <b>{g}</b>\n"
-                f"💡 Ұсыныслар: <b>{sg}</b>\n📊 Барлау күнлери: <b>{ad}</b>\n🔒 Блокланған: <b>{bl}</b>",
-                reply_markup=admin_menu())
+            sep1 = "═" * 25
+            sep2 = "─" * 25
+            stat_text = (
+                f"📈 <b>СТАТИСТИКА</b>\n{sep1}\n\n"
+                f"👥 Студентлер:    <b>{s}</b>\n"
+                f"{sep2}\n"
+                f"📅 Сабақлар:      <b>{l}</b>\n"
+                f"📰 Жаңалықлар:   <b>{n}</b>\n"
+                f"📚 Материаллар:  <b>{mat}</b>\n"
+                f"🎞 Галерея:       <b>{g}</b>\n"
+                f"{sep2}\n"
+                f"💡 Ұсыныслар:     <b>{sg}</b>\n"
+                f"📊 Барлау күни:   <b>{ad}</b>\n"
+                f"🔒 Блокланған:    <b>{bl}</b>\n"
+                f"{sep1}"
+            )
+            bot.send_message(message.chat.id, stat_text, reply_markup=admin_menu())
 
         elif message.text == "📩 Ус/Ша келген":
             with db_cursor() as (_, cursor):
@@ -151,11 +163,11 @@ def register(bot):
             days_left, _ = get_birthday_info(row[1])
             if days_left == 0: prefix="🎂 "; bd_label="🎂 <b>Бүгин тууылған күни!!!</b>"
             elif days_left == 1: prefix="🔔 "; bd_label="🔔 <b>Ертең тууылған күни!</b>"
-            elif days_left is not None and days_left<=7: prefix="⏳ "; bd_label=f"⏳ {days_left} күннен кейин тууылған күни"
+            elif days_left is not None and days_left<=7: prefix="⏳ "; bd_label=f"⏳ {days_left} күннен кейін туылған күні"
             else: prefix=""; bd_label=None
-            entry = f"{prefix}{i}. <b>{full_name}</b>\n   📅 {row[1] or '—'}"
-            if bd_label: entry += f"\n   {bd_label}"
-            entry += f"\n   📞 {phone_d}\n   🎓 HEMIS: {hemis_d}\n{'─'*25}\n"
+            entry = f"{'─'*25}\n{prefix}{i2}. <b>{full_name}</b>\n📅 {row[1] or '—'}"
+            if bd_label: entry += f"\n{bd_label}"
+            entry += f"\n📞 {phone_d}\n🎓 HEMIS: {hemis_d}\n"
             if len(cur)+len(entry)>3800: chunks.append(cur); cur=""
             cur += entry
         if cur: chunks.append(cur)
@@ -198,7 +210,7 @@ def register(bot):
                     fn=message.from_user.first_name or ""; ln=message.from_user.last_name or ""
                     un=f"@{message.from_user.username}" if message.from_user.username else "username жоқ"
                     bot.send_message(aid,
-                        f"💡 <b>Жаңа ұсыныс/шағым:</b>\n\n{message.text}\n\n"
+                        f"💡 <b>Таза ұсыныс/шағым:</b>\n\n{message.text}\n\n"
                         f"👤 {fn} {ln}\n🔗 {un}\n🆔 <code>{message.from_user.id}</code>")
                 except: pass
         except Exception as e:
