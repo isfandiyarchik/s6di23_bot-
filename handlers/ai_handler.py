@@ -15,10 +15,11 @@ AI_MAX_HISTORY = 20
 AI_CONTEXT_SIZE = 10
 
 AI_SYSTEM_PROMPT = (
-    "Сен S6-DI-23 группасының ақыллы көмекшисең. "
-    "Сорауларға қысқа, толық және дослық түрде жууап бер. "
-    "Пайдаланушы қай тилде жазса, сол тилде жууап бер "
-    "(қарақалпақша, қазақша, русский, английский — бари болады)."
+    "Сен S6-DI-23 студент группасының ақыллы көмекшисең. "
+    "БАРЛЫҚ жууапларды тек ҚАРАҚАЛПАҚ тилинде бер. "
+    "Пайдаланушы қандай тилде жазса да, жууабыңды тек қарақалпақша жаз. "
+    "Жууаплар қысқа, анық, дослық турде болсын. "
+    "Мысалы: сорау, жууап, оқыўшы, сабақ, билимлендириу хтб."
 )
 
 def _md_to_html(text: str) -> str:
@@ -111,7 +112,7 @@ def cleanup_ai_history():
             _ai_chat_history.pop(uid, None)
             _ai_last_active.pop(uid, None)
     if inactive:
-        logger.info(f"AI history cleanup: {len(inactive)} пайдаланушы тазаланды")
+        logger.info(f"AI history cleanup: {len(inactive)} пайдаланыушы тазаланды")
 
 def register(bot):
     ca = check_access(bot)
@@ -127,7 +128,7 @@ def register(bot):
         markup.row("⬅️ Артқа")
         bot.send_message(message.chat.id,
             "🤖 <b>AI Көмекши иске қосылды!</b>\n\n"
-            "✏️ Кез-келген сорауыңызды жазыңыз.\n"
+            "✏️ Кез-келген сұрауыңызды жазыңыз.\n"
             "🌐 Қай тилде жазсаңыз, сол тилде жууап береди.\n\n"
             "⚡ <i>Groq → OpenAI → Gemini (автоматты резерв)</i>",
             reply_markup=markup)
@@ -138,7 +139,7 @@ def register(bot):
     def ai_clear_cmd(message):
         ai_clear_history_mem(message.from_user.id)
         bot.send_message(message.chat.id,
-            "✅ <b>AI тарихы тазаланды!</b>\nТаза сөйлесту басланды.")
+            "✅ <b>AI тарихы тазаланды!</b>\nТаза сөйлесиу басланды.")
 
     @bot.message_handler(
         content_types=["text"],
@@ -148,7 +149,7 @@ def register(bot):
     def ai_chat_handler(message):
         text = message.text.strip()
         if not text:
-            bot.send_message(message.chat.id, "✏️ Сұрауыңызды жазыңыз."); return
+            bot.send_message(message.chat.id, "✏️ Сорауыңызды жазыңыз."); return
         bot.send_chat_action(message.chat.id, "typing")
         wait_msg = bot.send_message(message.chat.id, "⏳ <i>AI ойланып атыр...</i>")
         answer = ai_ask(message.from_user.id, text)
@@ -156,3 +157,4 @@ def register(bot):
         except: pass
         try: bot.send_message(message.chat.id, f"🤖 {_md_to_html(answer)}", parse_mode="HTML")
         except: bot.send_message(message.chat.id, f"🤖 {answer}")
+
