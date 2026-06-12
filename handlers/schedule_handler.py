@@ -78,8 +78,8 @@ def register(bot):
             bot.send_message(message.chat.id, "📭 Кесте бос.", reply_markup=schedule_admin_submenu()); return
         text = "📋 <b>Барлық сабақлар:</b>\n\n"
         for r in lessons:
-            text += f"ID:{r[0]} | {r[1]} | {r[2]} | {r[3]}\n"
-        text += "\n<code>Күн;Уақыт</code> форматында жазыңыз:"
+            text += f"ID:<code>{r[0]}</code> | {r[1]} | {r[2]} | {r[3]}\n"
+        text += "\n<b>ID жазыңыз (өшириу үшын):</b>"
         msg = bot.send_message(message.chat.id, text, reply_markup=back_menu())
         bot.register_next_step_handler(msg, delete_lesson)
 
@@ -88,19 +88,20 @@ def register(bot):
         if not message.text or message.text == "⬅️ Артқа":
             bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
         try:
-            parts = [p.strip() for p in message.text.split(";")]
-            if len(parts) != 2 or not all(parts): raise ValueError
-            day, time_ = parts
-            with db_cursor() as (conn, cursor):
-                cursor.execute("DELETE FROM schedule WHERE day=%s AND time=%s", (day, time_))
-                d = cursor.rowcount; conn.commit()
-            if d:
-                bot.send_message(message.chat.id, f"✅ Өширилди: {day} — {time_}", reply_markup=schedule_admin_submenu())
-            else:
-                bot.send_message(message.chat.id, "⚠️ Табылмады.", reply_markup=schedule_admin_submenu())
+            rid = int(message.text.strip())
         except ValueError:
-            msg = bot.send_message(message.chat.id, "❌ <code>Понедельник;09:00</code>", reply_markup=back_menu())
-            bot.register_next_step_handler(msg, delete_lesson)
+            msg = bot.send_message(message.chat.id, "❌ Тек сан ID жазыңыз:", reply_markup=back_menu())
+            bot.register_next_step_handler(msg, delete_lesson); return
+        try:
+            with db_cursor() as (conn, cursor):
+                cursor.execute("SELECT day,subject,time FROM schedule WHERE id=%s", (rid,))
+                row = cursor.fetchone()
+                if not row:
+                    bot.send_message(message.chat.id, "⚠️ Табылмады.", reply_markup=schedule_admin_submenu()); return
+                cursor.execute("DELETE FROM schedule WHERE id=%s", (rid,))
+                conn.commit()
+            bot.send_message(message.chat.id,
+                f"✅ Өширилди: {row[0]} | {row[1]} | {row[2]}", reply_markup=schedule_admin_submenu())
         except Exception as e:
             bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=schedule_admin_submenu())
 
@@ -148,7 +149,7 @@ def register(bot):
             bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
         try:
             parts = [p.strip() for p in message.text.split(";")]
-            if len(parts) != 3: raise ValueError("3 бөлек болуы керек")
+            if len(parts) != 3: raise ValueError("3 бөлек болыуы керек")
             new_day = parts[0] if parts[0] != "—" else old_day
             new_subj = parts[1] if parts[1] != "—" else old_subj
             new_time = parts[2] if parts[2] != "—" else old_time
