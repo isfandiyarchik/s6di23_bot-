@@ -28,6 +28,6 @@ def register(bot):
             conn.commit()
         clear_user_state(uid)
         bot.send_message(uid,
-            "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлымын.\nБөлимди таңлаңыз:",
+            "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлыман.\nБөлимди таңлаңыз:",
             reply_markup=main_menu(uid))
 
