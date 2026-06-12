@@ -128,7 +128,7 @@ def register(bot):
         markup.row("⬅️ Артқа")
         bot.send_message(message.chat.id,
             "🤖 <b>AI Көмекши иске қосылды!</b>\n\n"
-            "✏️ Кез-келген сұрауыңызды жазыңыз.\n"
+            "✏️ Кез-келген сорауыңызды жазыңыз.\n"
             "🌐 Қай тилде жазсаңыз, сол тилде жууап береди.\n\n"
             "⚡ <i>Groq → OpenAI → Gemini (автоматты резерв)</i>",
             reply_markup=markup)
