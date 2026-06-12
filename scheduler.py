@@ -1,169 +1,135 @@
-from database import db_cursor, now_uz
-from handlers.common import (
-    is_admin, check_access, check_access_cb,
-    DAYS_RU, DAYS_EN_TO_RU, MONTHS_RU,
-    back_menu, schedule_menu, schedule_admin_submenu, admin_menu, main_menu
+import time
+import logging
+from datetime import datetime, timedelta
+from threading import Thread
+from database import (
+    db_cursor, now_uz, cleanup_old_sessions,
+    reminder_already_sent, mark_reminder_sent
 )
 
-def register(bot):
-    ca = check_access(bot)
+logger = logging.getLogger(__name__)
 
-    @bot.message_handler(func=lambda m: m.text == "📅 Сабақ кестеси")
-    @ca
-    def show_schedule_menu(message):
-        bot.send_message(message.chat.id, "📅 <b>Сабақ кестеси</b>\nКүнди таңлаңыз:", reply_markup=schedule_menu())
+DAYS_EN_TO_RU = {
+    "Monday": "Понедельник", "Tuesday": "Вторник", "Wednesday": "Среда",
+    "Thursday": "Четверг", "Friday": "Пятница", "Saturday": "Суббота", "Sunday": "Воскресенье"
+}
 
-    @bot.message_handler(func=lambda m: m.text in DAYS_RU)
-    @ca
-    def show_day_schedule(message):
-        day = message.text
-        with db_cursor() as (_, cursor):
-            cursor.execute("SELECT subject,time FROM schedule WHERE day=%s ORDER BY time", (day,))
-            rows = cursor.fetchall()
-        today_ru = DAYS_EN_TO_RU.get(now_uz().strftime("%A"), "")
-        today_mark = " 📌 <i>(бүгин)</i>" if day == today_ru else ""
-        if not rows:
-            bot.send_message(message.chat.id, f"📭 <b>{day}{today_mark}</b>\n\nСабақ жоқ.", reply_markup=schedule_menu()); return
-        text = f"📅 <b>{day}{today_mark}</b>\n\n"
-        for i, r in enumerate(rows, 1):
-            text += f"{i}-пара 🕐 <b>{r[1]}</b> — {r[0]}\n"
-        bot.send_message(message.chat.id, text, reply_markup=schedule_menu())
 
-    @bot.message_handler(func=lambda m: m.text == "📅 Сабақ басқарыу")
-    @ca
-    def schedule_management(message):
-        if not is_admin(message.from_user.id):
-            bot.send_message(message.chat.id, "🚫"); return
-        bot.send_message(message.chat.id, "📅 <b>Сабақ басқарыу</b>", reply_markup=schedule_admin_submenu())
+def start_scheduler(bot, send_to_students_fn, clean_rate_limit_fn, cleanup_ai_fn):
+    """Scheduler-ды daemon thread-та иске қосыу"""
+    def _run():
+        _last_ping = 0
+        _last_minute = -1
 
-    @bot.message_handler(func=lambda m: m.text == "➕ Сабақ қосыу")
-    @ca
-    def schedule_add_start(message):
-        if not is_admin(message.from_user.id):
-            bot.send_message(message.chat.id, "🚫"); return
-        msg = bot.send_message(message.chat.id,
-            "📝 Формат: <code>Понедельник;Математика;09:00</code>", reply_markup=back_menu())
-        bot.register_next_step_handler(msg, add_lesson)
+        while True:
+            try:
+                now = now_uz()
+                h, m_ = now.hour, now.minute
+                current_minute = h * 60 + m_
 
-    def add_lesson(message):
-        if not is_admin(message.from_user.id): return
-        if not message.text or message.text == "⬅️ Артқа":
-            bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
-        try:
-            parts = [p.strip() for p in message.text.split(";")]
-            if len(parts) != 3 or not all(parts): raise ValueError
-            day, subject, time_ = parts
-            if day not in DAYS_RU: raise ValueError(f"Күн дұрыс емес: {day}")
-            with db_cursor() as (conn, cursor):
-                cursor.execute("INSERT INTO schedule(day,subject,time) VALUES(%s,%s,%s)", (day, subject, time_))
-                conn.commit()
-            bot.send_message(message.chat.id,
-                f"✅ <b>{day} | {subject} | {time_}</b> қосылды!", reply_markup=schedule_admin_submenu())
-        except ValueError as e:
-            msg = bot.send_message(message.chat.id,
-                f"❌ <code>Понедельник;Математика;09:00</code>\n({e})", reply_markup=back_menu())
-            bot.register_next_step_handler(msg, add_lesson)
-        except Exception as e:
-            bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=schedule_admin_submenu())
+                # DB ping: әр 4 минут сайын
+                ping_now = time.time()
+                if ping_now - _last_ping >= 240:
+                    try:
+                        with db_cursor() as (_, cursor):
+                            cursor.execute("SELECT 1")
+                        _last_ping = ping_now
+                    except Exception as e:
+                        logger.warning(f"DB ping қате: {e}")
 
-    @bot.message_handler(func=lambda m: m.text == "❌ Сабақ өшириу")
-    @ca
-    def schedule_delete_start(message):
-        if not is_admin(message.from_user.id):
-            bot.send_message(message.chat.id, "🚫"); return
-        with db_cursor() as (_, cursor):
-            cursor.execute("SELECT id,day,subject,time FROM schedule ORDER BY day,time")
-            lessons = cursor.fetchall()
-        if not lessons:
-            bot.send_message(message.chat.id, "📭 Кесте бос.", reply_markup=schedule_admin_submenu()); return
-        text = "📋 <b>Барлық сабақлар:</b>\n\n"
-        for r in lessons:
-            text += f"ID:<code>{r[0]}</code> | {r[1]} | {r[2]} | {r[3]}\n"
-        text += "\n<b>ID жазыңыз (өшириу үшын):</b>"
-        msg = bot.send_message(message.chat.id, text, reply_markup=back_menu())
-        bot.register_next_step_handler(msg, delete_lesson)
+                if current_minute == _last_minute:
+                    time.sleep(15)
+                    continue
+                _last_minute = current_minute
 
-    def delete_lesson(message):
-        if not is_admin(message.from_user.id): return
-        if not message.text or message.text == "⬅️ Артқа":
-            bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
-        try:
-            rid = int(message.text.strip())
-        except ValueError:
-            msg = bot.send_message(message.chat.id, "❌ Тек сан ID жазыңыз:", reply_markup=back_menu())
-            bot.register_next_step_handler(msg, delete_lesson); return
-        try:
-            with db_cursor() as (conn, cursor):
-                cursor.execute("SELECT day,subject,time FROM schedule WHERE id=%s", (rid,))
-                row = cursor.fetchone()
-                if not row:
-                    bot.send_message(message.chat.id, "⚠️ Табылмады.", reply_markup=schedule_admin_submenu()); return
-                cursor.execute("DELETE FROM schedule WHERE id=%s", (rid,))
-                conn.commit()
-            bot.send_message(message.chat.id,
-                f"✅ Өширилди: {row[0]} | {row[1]} | {row[2]}", reply_markup=schedule_admin_submenu())
-        except Exception as e:
-            bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=schedule_admin_submenu())
+                # ── Таңғы хабарлама 07:30 ──
+                if h == 7 and m_ == 30:
+                    key = f"morning_{now.strftime('%Y-%m-%d')}"
+                    if not reminder_already_sent(key):
+                        try:
+                            today = DAYS_EN_TO_RU.get(now.strftime("%A"), "")
+                            with db_cursor() as (_, cursor):
+                                cursor.execute(
+                                    "SELECT subject,time FROM schedule WHERE day=%s ORDER BY time", (today,))
+                                lessons = cursor.fetchall()
+                            msg_ = f"☀️ <b>Қайырлы таң!</b>\n📅 Бүгин: <b>{today}</b>\n\n"
+                            if lessons:
+                                msg_ += "📖 <b>Бүгинги сабақлар:</b>\n"
+                                for i, r in enumerate(lessons, 1):
+                                    msg_ += f"  {i}-пара 🕐 {r[1]} — {r[0]}\n"
+                            else:
+                                msg_ += "📭 Бүгин сабақ жоқ. Демалыңыз! 🎉"
+                            send_to_students_fn(text=msg_)
+                            mark_reminder_sent(key)
+                            logger.info(f"✅ Таңғы хабарлама жиберилди: {key}")
+                        except Exception as e:
+                            logger.error(f"Таңғы хабарлама қате: {e}", exc_info=True)
 
-    @bot.message_handler(func=lambda m: m.text == "✏️ Сабақ өзгертиу")
-    @ca
-    def schedule_edit_start(message):
-        if not is_admin(message.from_user.id):
-            bot.send_message(message.chat.id, "🚫"); return
-        with db_cursor() as (_, cursor):
-            cursor.execute("SELECT id,day,subject,time FROM schedule ORDER BY day,time")
-            lessons = cursor.fetchall()
-        if not lessons:
-            bot.send_message(message.chat.id, "📭 Кесте бос.", reply_markup=schedule_admin_submenu()); return
-        text = "✏️ <b>Сабақ өзгертиу — ID жазыңыз:</b>\n\n"
-        for r in lessons:
-            text += f"ID:<code>{r[0]}</code> | {r[1]} | {r[2]} | {r[3]}\n"
-        msg = bot.send_message(message.chat.id, text, reply_markup=back_menu())
-        bot.register_next_step_handler(msg, handle_schedule_edit_id)
+                # ── Туылған күн тексеру 09:00 ──
+                elif h == 9 and m_ == 0:
+                    today_str = now.strftime("%m-%d")
+                    try:
+                        with db_cursor() as (_, cursor):
+                            cursor.execute(
+                                "SELECT id,full_name,birth_date FROM students "
+                                "WHERE birth_date IS NOT NULL AND birth_date!=''")
+                            students_ = cursor.fetchall()
+                        for sid, sname, bd in students_:
+                            try:
+                                if not bd: continue
+                                bd_str = str(bd).strip()[:10]
+                                if not bd_str: continue
+                                bd_dt = datetime.strptime(bd_str, "%Y-%m-%d")
+                                if bd_dt.strftime("%m-%d") != today_str: continue
+                                bday_key = f"birthday_{sid}_{now.strftime('%Y-%m-%d')}"
+                                if reminder_already_sent(bday_key): continue
+                                age = now.year - bd_dt.year
+                                send_to_students_fn(
+                                    text=(
+                                        f"🎂 <b>Бүгин {sname}-ның тууылған күни!</b>\n"
+                                        f"🎉 Оған {age} жас толды!\n\n"
+                                        "Барлық группа атынан құтлықлаймыз! 🎊"))
+                                try:
+                                    bot.send_message(sid,
+                                        f"🎂 <b>Тууылған күниңиз мүбәрек болсын!</b>\n"
+                                        f"🎉 Сизге {age} жас толды!\n\n"
+                                        "S6-DI-23 группасы атынан ең жыллы тилеклеримизди жоллаймыз! 🎊")
+                                except Exception:
+                                    pass
+                                mark_reminder_sent(bday_key)
+                                logger.info(f"🎂 Тууылған күн хабарламасы: {sname}")
+                            except Exception as e:
+                                logger.warning(f"Birthday check ({sname}): {e}")
+                    except Exception as e:
+                        logger.error(f"Birthday scheduler: {e}", exc_info=True)
 
-    def handle_schedule_edit_id(message):
-        if not is_admin(message.from_user.id): return
-        if not message.text or message.text == "⬅️ Артқа":
-            bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
-        try:
-            rid = int(message.text.strip())
-        except ValueError:
-            msg = bot.send_message(message.chat.id, "❌ Тек сан ID жазыңыз:", reply_markup=back_menu())
-            bot.register_next_step_handler(msg, handle_schedule_edit_id); return
-        with db_cursor() as (_, cursor):
-            cursor.execute("SELECT id,day,subject,time FROM schedule WHERE id=%s", (rid,))
-            row = cursor.fetchone()
-        if not row:
-            bot.send_message(message.chat.id, "⚠️ Табылмады.", reply_markup=schedule_admin_submenu()); return
-        text = (f"✏️ <b>Өзгертиу:</b>\n"
-                f"📅 {row[1]} | {row[2]} | 🕐 {row[3]}\n\n"
-                f"Формат: <code>Күн;Пән;Уақыт</code>\n"
-                f"Өзгертпей <b>—</b> жазыңыз.")
-        msg = bot.send_message(message.chat.id, text, reply_markup=back_menu())
-        bot.register_next_step_handler(msg,
-            lambda m: handle_schedule_edit_save(m, rid, row[1], row[2], row[3]))
+                # ── Тазалау 03:00 ──
+                elif h == 3 and m_ == 0:
+                    clean_key = f"cleanup_{now.strftime('%Y-%m-%d')}"
+                    if not reminder_already_sent(clean_key):
+                        try:
+                            cleanup_old_sessions()
+                            clean_rate_limit_fn()
+                            cleanup_ai_fn()
+                            with db_cursor() as (conn, cursor):
+                                cursor.execute("DELETE FROM ai_history WHERE updated_at < %s",
+                                               (now_uz() - timedelta(days=30),))
+                                conn.commit()
+                            with db_cursor() as (conn, cursor):
+                                cursor.execute("DELETE FROM sent_reminders WHERE sent_at < %s",
+                                               (now_uz() - timedelta(days=7),))
+                                conn.commit()
+                            mark_reminder_sent(clean_key)
+                            logger.info("✅ Түнги тазалау жуумақланды")
+                        except Exception as e:
+                            logger.error(f"Тазалау қате: {e}", exc_info=True)
 
-    def handle_schedule_edit_save(message, rid, old_day, old_subj, old_time):
-        if not is_admin(message.from_user.id): return
-        if not message.text or message.text == "⬅️ Артқа":
-            bot.send_message(message.chat.id, "📅 Сабақ басқарыу", reply_markup=schedule_admin_submenu()); return
-        try:
-            parts = [p.strip() for p in message.text.split(";")]
-            if len(parts) != 3: raise ValueError("3 бөлек болыуы керек")
-            new_day = parts[0] if parts[0] != "—" else old_day
-            new_subj = parts[1] if parts[1] != "—" else old_subj
-            new_time = parts[2] if parts[2] != "—" else old_time
-            if new_day not in DAYS_RU: raise ValueError(f"Күн дұрыс емес: {new_day}")
-            with db_cursor() as (conn, cursor):
-                cursor.execute("UPDATE schedule SET day=%s,subject=%s,time=%s WHERE id=%s",
-                    (new_day, new_subj, new_time, rid))
-                conn.commit()
-            bot.send_message(message.chat.id,
-                f"✅ Тазаланды!\n📅 {new_day} | {new_subj} | {new_time}",
-                reply_markup=schedule_admin_submenu())
-        except Exception as e:
-            msg = bot.send_message(message.chat.id,
-                f"❌ Формат: <code>Күн;Пән;Уақыт</code> ({e})", reply_markup=back_menu())
-            bot.register_next_step_handler(msg,
-                lambda m: handle_schedule_edit_save(m, rid, old_day, old_subj, old_time))
+            except Exception as e:
+                logger.error(f"auto_scheduler қате: {e}", exc_info=True)
 
+            time.sleep(15)
+
+    t = Thread(target=_run, daemon=True)
+    t.start()
+    logger.info("⏰ Scheduler иске қосылды")
+    return t
