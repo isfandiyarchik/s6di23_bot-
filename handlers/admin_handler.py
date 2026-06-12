@@ -129,7 +129,7 @@ def register(bot):
                 bot.send_message(message.chat.id, "📭 Жоқ.", reply_markup=admin_menu()); return
             chunks = []; cur = f"📩 <b>Ұсыныс/Шағымлар ({len(rows)}):</b>\n\n"
             for r in rows:
-                entry = (f"👤 {'@'+r[3] if r[3] else 'Белгісіз'} | <code>{r[1]}</code>\n"
+                entry = (f"👤 {'@'+r[3] if r[3] else 'Белгисиз'} | <code>{r[1]}</code>\n"
                          f"🕐 {r[2]}\n💬 {r[0]}\n{'─'*25}\n")
                 if len(cur)+len(entry)>3800: chunks.append(cur); cur=""
                 cur += entry
@@ -163,9 +163,9 @@ def register(bot):
             days_left, _ = get_birthday_info(row[1])
             if days_left == 0: prefix="🎂 "; bd_label="🎂 <b>Бүгин тууылған күни!!!</b>"
             elif days_left == 1: prefix="🔔 "; bd_label="🔔 <b>Ертең тууылған күни!</b>"
-            elif days_left is not None and days_left<=7: prefix="⏳ "; bd_label=f"⏳ {days_left} күннен кейін туылған күні"
+            elif days_left is not None and days_left<=7: prefix="⏳ "; bd_label=f"⏳ {days_left} күннен кейин тууылған күни"
             else: prefix=""; bd_label=None
-            entry = f"{'─'*25}\n{prefix}{i2}. <b>{full_name}</b>\n📅 {row[1] or '—'}"
+            entry = f"{'─'*25}\n{prefix}{i}. <b>{full_name}</b>\n📅 {row[1] or '—'}"
             if bd_label: entry += f"\n{bd_label}"
             entry += f"\n📞 {phone_d}\n🎓 HEMIS: {hemis_d}\n"
             if len(cur)+len(entry)>3800: chunks.append(cur); cur=""
@@ -270,7 +270,7 @@ def register(bot):
             bot.send_message(message.chat.id, "📭 Жаңалықлар жоқ.", reply_markup=delete_submenu()); return
         text = "🗑 <b>Жаңалықларды өшириу:</b>\n\n"
         for r in rows:
-            uname = f"@{r[1]}" if r[1] else "Белгісіз"
+            uname = f"@{r[1]}" if r[1] else "Белгисиз"
             preview = r[3][:40]+"..." if len(r[3])>40 else r[3]
             text += f"ID:<code>{r[0]}</code> | {uname}\n📌 {preview}\n{'─'*20}\n"
         text += "\n\nID ямаса <code>all</code> жазыңыз:"
