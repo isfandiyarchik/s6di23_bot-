@@ -1,3 +1,4 @@
+# Attendance handler — барлау + студент өз барлауын көреді + статистика
 import io
 import re
 import os
@@ -8,7 +9,7 @@ from database import (db_cursor, now_uz, save_attendance_session,
 from handlers.common import (
     is_admin, check_access, check_access_cb,
     DAYS_EN_TO_RU, MONTHS_RU,
-    date_to_ru, attendance_submenu
+    date_to_ru, attendance_submenu, main_menu, back_menu
 )
 
 logger = logging.getLogger(__name__)
@@ -144,7 +145,7 @@ def finish_attendance(bot, message, admin_id):
                 f"📅 {date_str}\n\nСебебиңизди группаға хабарлаңыз.")
         except: pass
     bot.send_message(message.chat.id,
-        "✅ Барлау сақланды!\n📅 Тарихты <b>Барлау тарихы</b> арқалы ашыңыз.",
+        "✅ Барлау сақланды!\n📅 Тарийхты <b>Барлау тарийхы</b> арқалы ашыңыз.",
         reply_markup=attendance_submenu())
 
 
@@ -183,7 +184,7 @@ def register(bot):
             f"📊 <b>Барлау — {today}</b>\n\nҚай параны белгилейсиз:",
             reply_markup=markup)
 
-    @bot.message_handler(func=lambda m: m.text == "📅 Барлау тарихы")
+    @bot.message_handler(func=lambda m: m.text == "📅 Барлау тарийхы")
     @ca
     def attendance_history(message):
         if not is_admin(message.from_user.id):
@@ -202,7 +203,127 @@ def register(bot):
                 text=f"📅 {MONTHS_RU.get(int(mo), mo)} {y}",
                 callback_data=f"hist_month_{ym}"))
         bot.send_message(message.chat.id,
-            "📅 <b>Барлау тарихы</b>\n\nАйды таңлаңыз:", reply_markup=markup)
+            "📅 <b>Барлау тарийхы</b>\n\nАйды таңлаңыз:", reply_markup=markup)
+
+    # ── ЖАҢ: Студент өз барлауын көреді ─────────────────────
+    @bot.message_handler(func=lambda m: m.text == "📊 Мениң барлауым")
+    @ca
+    def my_attendance(message):
+        uid = message.from_user.id
+        with db_cursor() as (_, cursor):
+            cursor.execute(
+                "SELECT full_name FROM students WHERE id=%s", (uid,))
+            row = cursor.fetchone()
+            if not row:
+                bot.send_message(message.chat.id, "❌ Студент табылмады.",
+                    reply_markup=main_menu(uid)); return
+            sname = row[0]
+            cursor.execute(
+                "SELECT date,para,subject,status FROM attendance "
+                "WHERE student_id=%s ORDER BY date DESC, para ASC LIMIT 30",
+                (uid,))
+            records = cursor.fetchall()
+            cursor.execute(
+                "SELECT COUNT(*) FROM attendance WHERE student_id=%s", (uid,))
+            total = cursor.fetchone()[0]
+            cursor.execute(
+                "SELECT COUNT(*) FROM attendance WHERE student_id=%s AND status='present'",
+                (uid,))
+            present = cursor.fetchone()[0]
+
+        if not records:
+            bot.send_message(message.chat.id,
+                "📭 Барлау жазбаңыз жоқ.", reply_markup=main_menu(uid)); return
+
+        absent = total - present
+        pct = int((present / total) * 100) if total > 0 else 0
+        bar = "🟩" * (pct // 10) + "⬜" * (10 - pct // 10)
+        sep = "─" * 30
+
+        text = (f"📊 <b>Мениң барлауым</b>\n"
+                f"👤 <b>{sname}</b>\n{sep}\n"
+                f"✅ Барғаным:  <b>{present}</b>\n"
+                f"❌ Болмаған: <b>{absent}</b>\n"
+                f"📈 Улыума:    <b>{total}</b>\n"
+                f"{bar} <b>{pct}%</b>\n{sep}\n\n"
+                f"📋 <b>Соңғы 30 жазба:</b>\n{sep}\n")
+
+        for rec in records:
+            icon = "✅" if rec[3] == "present" else "❌"
+            text += f"{icon} {date_to_ru(rec[0])} | {rec[1]}-пара: {rec[2]}\n"
+
+        bot.send_message(message.chat.id, text, reply_markup=main_menu(uid))
+
+    # ── ЖАҢ: Барлау статистикасы (admin) ────────────────────
+    @bot.message_handler(func=lambda m: m.text == "📈 Барлау статистикасы")
+    @ca
+    def attendance_stats(message):
+        if not is_admin(message.from_user.id):
+            bot.send_message(message.chat.id, "🚫"); return
+        with db_cursor() as (_, cursor):
+            # Жалпы статистика
+            cursor.execute("SELECT COUNT(DISTINCT date) FROM attendance")
+            total_days = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM attendance WHERE status='present'")
+            total_present = cursor.fetchone()[0]
+            cursor.execute("SELECT COUNT(*) FROM attendance")
+            total_all = cursor.fetchone()[0]
+            # Ең көп келмеген студенттер
+            cursor.execute("""
+                SELECT student_name, COUNT(*) as absent_count
+                FROM attendance WHERE status='absent'
+                GROUP BY student_name ORDER BY absent_count DESC LIMIT 5
+            """)
+            top_absent = cursor.fetchall()
+            # Ең жиі келген студенттер
+            cursor.execute("""
+                SELECT student_name, COUNT(*) as present_count
+                FROM attendance WHERE status='present'
+                GROUP BY student_name ORDER BY present_count DESC LIMIT 5
+            """)
+            top_present = cursor.fetchall()
+            # Пән бойынша статистика
+            cursor.execute("""
+                SELECT subject,
+                    SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) as p,
+                    COUNT(*) as t
+                FROM attendance GROUP BY subject ORDER BY subject
+            """)
+            subj_stats = cursor.fetchall()
+
+        if total_all == 0:
+            bot.send_message(message.chat.id, "📭 Барлау жазбасы жоқ.",
+                reply_markup=attendance_submenu()); return
+
+        pct = int((total_present / total_all) * 100) if total_all > 0 else 0
+        bar = "🟩" * (pct // 10) + "⬜" * (10 - pct // 10)
+        sep = "─" * 30
+        sep2 = "═" * 30
+
+        text = (f"📈 <b>БАРЛАУ СТАТИСТИКАСЫ</b>\n{sep2}\n\n"
+                f"📅 Барлау күнлери: <b>{total_days}</b>\n"
+                f"✅ Барғанлар:      <b>{total_present}</b>\n"
+                f"❌ Болмағанлар:    <b>{total_all - total_present}</b>\n"
+                f"📊 Орташа қатнасыу:  <b>{pct}%</b>\n"
+                f"{bar}\n{sep}\n")
+
+        if top_absent:
+            text += "\n⚠️ <b>Ең көп болмағанлар:</b>\n"
+            for i, (name, cnt) in enumerate(top_absent, 1):
+                text += f"  {i}. {name} — <b>{cnt} рет</b>\n"
+
+        if top_present:
+            text += f"\n🏆 <b>Ең коп келгенлер:</b>\n"
+            for i, (name, cnt) in enumerate(top_present, 1):
+                text += f"  {i}. {name} — <b>{cnt} рет</b>\n"
+
+        if subj_stats:
+            text += f"\n{sep}\n📚 <b>Пән бойынша:</b>\n"
+            for subj, p, t in subj_stats:
+                s_pct = int((p / t) * 100) if t > 0 else 0
+                text += f"  📖 {subj}: <b>{s_pct}%</b> ({p}/{t})\n"
+
+        bot.send_message(message.chat.id, text, reply_markup=attendance_submenu())
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("att_para_"))
     @cacb
@@ -217,7 +338,7 @@ def register(bot):
                 "SELECT subject FROM schedule WHERE day=%s ORDER BY time", (today,))
             lessons = [r[0] for r in cursor.fetchall()]
         if para > len(lessons):
-            bot.answer_callback_query(call.id, "Қате пара нөмери."); return
+            bot.answer_callback_query(call.id, "Қате пара нөмири."); return
         subject = lessons[para - 1]
         with db_cursor() as (_, cursor):
             cursor.execute(
@@ -313,7 +434,7 @@ def register(bot):
             markup.add(types.InlineKeyboardButton(
                 text=f"📅 {MONTHS_RU.get(int(mo), mo)} {y}",
                 callback_data=f"hist_month_{ym}"))
-        bot.edit_message_text("📅 <b>Барлау тарихы</b>\n\nАйды таңлаңыз:",
+        bot.edit_message_text("📅 <b>Барлау тарийхы</b>\n\nАйды таңлаңыз:",
             call.message.chat.id, call.message.message_id,
             reply_markup=markup, parse_mode="HTML")
         bot.answer_callback_query(call.id)
@@ -406,4 +527,4 @@ def register(bot):
             bot.answer_callback_query(
                 call.id, "✅ Excel жиберилди!" if ok else "❌ Жибериу қатеси.")
         else:
-            bot.answer_callback_query(call.id, "❌ Excel ислемеди.")
+            bot.answer_callback_query(call.id, "❌ Excel ислмеды.")
