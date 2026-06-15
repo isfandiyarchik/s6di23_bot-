@@ -207,7 +207,7 @@ def get_online_status(la):
         elif d < 3600: return f"🟡 {int(d//60)} мин бұрын"
         elif d < 86400: return f"🔴 {int(d//3600)} сағ бұрын"
         else: return f"🔴 {int(d//86400)} күн бұрын"
-    except: return "⚪ Белгисиз"
+    except: return "⚪ Белгісіз"
 
 def _is_online(la, now_t):
     try:
@@ -223,6 +223,7 @@ def main_menu(uid=None):
     m.row("💡 Ұсыныс / Шағым", "📋 Список")
     m.row("📞 Байланыс", "💰 Контракт")
     m.row("📖 Пәнлер", "📊 Сабақ/Ертеңге")
+    m.row("📊 Мениң барлауым")
     m.row("🤖 AI Көмекши")
     if uid and is_admin(uid): m.row("👮 Админ панель")
     return m
@@ -296,7 +297,8 @@ def excel_submenu():
 
 def attendance_submenu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    m.row("📊 Барлау", "📅 Барлау тарихы")
+    m.row("📊 Барлау", "📅 Барлау тарийхы")
+    m.row("📈 Барлау статистикасы")
     m.row("⬅️ Админге қайтыу")
     return m
 
