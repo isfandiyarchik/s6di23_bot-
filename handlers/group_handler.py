@@ -150,4 +150,4 @@ def register(bot):
             else:
                 name = member.first_name or "Студент"
                 bot.send_message(message.chat.id,
-                    f"👋 <b>{name}</b> группаға хош келди! 🎉")
+                    f"👋 <b>{name}</b> группаға хош келдиң! 🎉")
