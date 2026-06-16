@@ -1,5 +1,5 @@
 """
-Барлық handler-ларды тіркеу
+Барлық handler-ларды тиркеу
 """
 def register_all_handlers(bot):
     from handlers.start_handler import register as reg_start
@@ -19,6 +19,7 @@ def register_all_handlers(bot):
     from handlers.sabak_handler import register as reg_sabak
 
     from handlers.group_handler import register as reg_group
+    from handlers.exam_handler import register as reg_exam
 
     reg_start(bot)
     reg_admin(bot)
@@ -36,3 +37,4 @@ def register_all_handlers(bot):
     reg_ai(bot)
     reg_sabak(bot)
     reg_group(bot)
+    reg_exam(bot)
