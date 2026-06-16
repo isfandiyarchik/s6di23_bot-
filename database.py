@@ -108,6 +108,14 @@ def init_db():
             user_id BIGINT PRIMARY KEY, history TEXT, updated_at TIMESTAMP DEFAULT NOW())""",
         """CREATE TABLE IF NOT EXISTS sent_reminders (
             key TEXT PRIMARY KEY, sent_at TIMESTAMP DEFAULT NOW())""",
+        """CREATE TABLE IF NOT EXISTS exams (
+            id SERIAL PRIMARY KEY, subject TEXT, exam_date TEXT,
+            exam_time TEXT, location TEXT, note TEXT,
+            created_at TIMESTAMP DEFAULT NOW())""",
+        """CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY, subject TEXT, title TEXT,
+            deadline TEXT, note TEXT,
+            created_at TIMESTAMP DEFAULT NOW())""",
     ]
     migrations = [
         "ALTER TABLE students ADD COLUMN IF NOT EXISTS full_name TEXT",
