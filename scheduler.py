@@ -53,7 +53,7 @@ def start_scheduler(bot, send_to_students_fn, clean_rate_limit_fn, cleanup_ai_fn
                                     "SELECT subject,time FROM schedule "
                                     "WHERE day=%s ORDER BY time", (today,))
                                 lessons = cursor.fetchall()
-                            msg_ = f"☀️ <b>Қайырлы таң!</b>\n📅 Бүгин: <b>{today}</b>\n\n"
+                            msg_ = f"☀️ <b>Қайырлы таң!</b>\n📅 Бүгін: <b>{today}</b>\n\n"
                             if lessons:
                                 msg_ += "📖 <b>Бүгинги сабақлар:</b>\n"
                                 for i, r in enumerate(lessons, 1):
@@ -73,8 +73,8 @@ def start_scheduler(bot, send_to_students_fn, clean_rate_limit_fn, cleanup_ai_fn
                 if h == 9 and m_ == 0:
                     _check_birthdays(bot, now, send_to_students_fn)
 
-                # ── Төлем мерзімі ескертіуі 10:00 (ай сайын 25-інде) ──
-                if h == 10 and m_ == 0 and now.day == 25:
+                # ── Төлем мерзімі ескертіуі — Дүйсенбі және Жұма 10:00 ──
+                if h == 10 and m_ == 0 and now.strftime("%A") in ("Monday", "Friday"):
                     _check_contract_reminders(bot, now)
 
                 # ── Тазалау 03:00 ──
@@ -110,7 +110,7 @@ def _check_lesson_reminders(bot, now, send_to_students_fn):
                 if 840 <= diff <= 960:
                     key = f"lesson_remind_{now.strftime('%Y-%m-%d')}_{time_str}"
                     if not reminder_already_sent(key):
-                        msg = (f"⏰ <b>Сабақ 15 минуттан кейин басланады!</b>\n\n"
+                        msg = (f"⏰ <b>Сабақ 2 минуттан кейин басланады!</b>\n\n"
                                f"📖 <b>{subject}</b>\n"
                                f"🕐 {time_str}\n\n"
                                f"Таярланыңыз! 💪")
@@ -167,8 +167,8 @@ def _check_birthdays(bot, now, send_to_students_fn):
 
 
 def _check_contract_reminders(bot, now):
-    """Төлемин ескертиуи — ай сайын 25-инде"""
-    key = f"contract_remind_{now.strftime('%Y-%m')}"
+    """Төлем мерзімі ескертіуі — ай сайын 25-інде"""
+    key = f"contract_remind_{now.strftime('%Y-%W-%A')}"
     if reminder_already_sent(key):
         return
     try:
@@ -191,7 +191,7 @@ def _check_contract_reminders(bot, now):
             try:
                 bot.send_message(sid,
                     f"💰 <b>Контракт төлеми ескертиуи!</b>\n\n"
-                    f"📅 Ай сайынғы ескертиу\n"
+                    f"📅 {now.strftime('%d.%m.%Y')} ({DAYS_EN_TO_RU.get(now.strftime('%A'), '')})\n"
                     f"⏳ Қалды: <b>{remaining:,.0f} сум</b>\n\n"
                     f"Уақытында төлеңиз! 🙏")
             except Exception:
