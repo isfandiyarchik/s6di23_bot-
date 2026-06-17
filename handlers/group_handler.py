@@ -40,25 +40,30 @@ def register(bot):
         commands=["кесте", "kesте", "schedule"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
     def group_schedule(message):
-        """Группа чатында бүгинги сабақ кесте"""
+        """Группа чатында бүгинги кесте — жууап тек жибериушиге"""
+        uid = message.from_user.id
         today = DAYS_EN_TO_RU.get(now_uz().strftime("%A"), "")
         with db_cursor() as (_, cursor):
             cursor.execute(
                 "SELECT subject,time FROM schedule WHERE day=%s ORDER BY time", (today,))
             lessons = cursor.fetchall()
+        # Группа чатындағы команданы өшір
+        try: bot.delete_message(message.chat.id, message.message_id)
+        except: pass
         if not lessons:
-            bot.reply_to(message, f"📭 Бүгин ({today}) сабақ жоқ.")
+            bot.send_message(uid, f"📭 Бүгин ({today}) сабақ жоқ.")
             return
-        text = f"📅 <b>Бүгинги сабақ кесте — {today}</b>\n\n"
+        text = f"📅 <b>Бүгинги кесте — {today}</b>\n\n"
         for i, (subject, time_) in enumerate(lessons, 1):
             text += f"{i}-пара 🕐 <b>{time_}</b> — {subject}\n"
-        bot.reply_to(message, text)
+        bot.send_message(uid, text)
 
     @bot.message_handler(
         commands=["ертең", "erten", "tomorrow"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
     def group_tomorrow(message):
-        """Группа чатында ертенги сабақ кесте"""
+        """Группа чатында ертеңги кесте — жууап тек жибериушиге"""
+        uid = message.from_user.id
         from datetime import timedelta
         tomorrow = DAYS_EN_TO_RU.get(
             (now_uz() + timedelta(days=1)).strftime("%A"), "")
@@ -66,31 +71,36 @@ def register(bot):
             cursor.execute(
                 "SELECT subject,time FROM schedule WHERE day=%s ORDER BY time", (tomorrow,))
             lessons = cursor.fetchall()
+        try: bot.delete_message(message.chat.id, message.message_id)
+        except: pass
         if not lessons:
-            bot.reply_to(message, f"📭 Ертең ({tomorrow}) сабақ жоқ.")
+            bot.send_message(uid, f"📭 Ертең ({tomorrow}) сабақ жоқ.")
             return
-        text = f"📅 <b>Ертенги сабақ кесте — {tomorrow}</b>\n\n"
+        text = f"📅 <b>Ертеңги кесте — {tomorrow}</b>\n\n"
         for i, (subject, time_) in enumerate(lessons, 1):
             text += f"{i}-пара 🕐 <b>{time_}</b> — {subject}\n"
-        bot.reply_to(message, text)
+        bot.send_message(uid, text)
 
     @bot.message_handler(
         commands=["список", "spisok", "list"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
     def group_student_list(message):
-        """Группа чатында студентлер дизими"""
+        """Группа чатында студентлер дизими — жууап тек жибериушиге"""
+        uid = message.from_user.id
         with db_cursor() as (_, cursor):
             cursor.execute(
                 "SELECT full_name FROM students "
                 "WHERE full_name IS NOT NULL ORDER BY full_name")
             rows = cursor.fetchall()
+        try: bot.delete_message(message.chat.id, message.message_id)
+        except: pass
         if not rows:
-            bot.reply_to(message, "📭 Список бос.")
+            bot.send_message(uid, "📭 Список бос.")
             return
         text = f"📋 <b>Студентлер дизими ({len(rows)}):</b>\n\n"
         for i, (name,) in enumerate(rows, 1):
             text += f"{i}. {name}\n"
-        bot.reply_to(message, text)
+        bot.send_message(uid, text)
 
     @bot.message_handler(
         commands=["жаңалық", "news"],
@@ -114,7 +124,10 @@ def register(bot):
         commands=["помощь", "help", "көмек"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
     def group_help(message):
-        """Группа чатында командалар дизими"""
+        """Группа чатында командалар дизими — жууап тек жибериушиге"""
+        uid = message.from_user.id
+        try: bot.delete_message(message.chat.id, message.message_id)
+        except: pass
         text = (
             "🤖 <b>Бот командалары (группа чаты):</b>\n\n"
             "/кесте — Бүгинги сабақ кестеси\n"
@@ -124,9 +137,9 @@ def register(bot):
             "/көмек — Командалар дизими\n\n"
             "📌 Толық мүмкинликлер үшын ботқа жеке жазыңыз!"
         )
-        bot.reply_to(message, text)
+        bot.send_message(uid, text)
 
-    # Группа чатына қосылған гезде сәлем
+    # Группа чатына қосылған кезде сәлем
     @bot.message_handler(
         content_types=["new_chat_members"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
