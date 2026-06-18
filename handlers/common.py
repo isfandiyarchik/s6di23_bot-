@@ -113,6 +113,11 @@ def check_access(bot):
         @functools.wraps(func)
         def wrapper(message):
             uid = message.from_user.id
+            # Группа чатта келсе — хабарламаны өшір, жауапты жеке жібер
+            is_group = message.chat.type in ("group", "supergroup")
+            if is_group:
+                try: bot.delete_message(message.chat.id, message.message_id)
+                except: pass
             if is_blocked(uid):
                 try: bot.send_message(uid, "⛔ Сиз блокландыңыз. Admin-ге хабарласыңыз.")
                 except: pass
@@ -126,6 +131,9 @@ def check_access(bot):
                 except: pass
                 return
             if not is_admin(uid): _update_last_active(uid)
+            # Группа чатта келсе — chat.id орнына uid қолдан
+            if is_group:
+                message.chat.id = uid
             return func(message)
         return wrapper
     return decorator
