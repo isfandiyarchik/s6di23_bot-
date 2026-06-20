@@ -113,7 +113,7 @@ def check_access(bot):
         @functools.wraps(func)
         def wrapper(message):
             uid = message.from_user.id
-            # Группа чатта келсе — хабарламаны өшір, жауапты жеке жібер
+            # Группа чатта келсе — хабарламаны өшир, жууапты жеке жибер
             is_group = message.chat.type in ("group", "supergroup")
             if is_group:
                 try: bot.delete_message(message.chat.id, message.message_id)
@@ -307,7 +307,7 @@ def excel_submenu():
 
 def attendance_submenu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    m.row("📊 Барлау", "📅 Барлау тарийхы")
+    m.row("📊 Барлау", "📅 Барлау тарихы")
     m.row("📈 Барлау статистикасы")
     m.row("⬅️ Админге қайтыу")
     return m
