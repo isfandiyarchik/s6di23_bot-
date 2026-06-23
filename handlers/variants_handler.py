@@ -221,7 +221,7 @@ def register(bot):
             rows=cursor.fetchall()
         if not rows:
             bot.send_message(message.chat.id,"📭 Пәнлер жоқ.",reply_markup=panler_admin_submenu()); return
-        text="✏️ <b>Қай пәнниң атын өзгертесиз?</b>\n\nПәнниң атын жазыңыз (тап усылай):\n\n"
+        text="✏️ <b>Қайсы пәнниң атын өзгертесиз?</b>\n\nПәнниң атын жазыңыз (тап усылай):\n\n"
         for i,r in enumerate(rows,1): text+=f"{i}. <b>{r[0]}</b>\n"
         msg=bot.send_message(message.chat.id,text,reply_markup=back_menu())
         bot.register_next_step_handler(msg,handle_variant_subject_edit_old)
@@ -247,7 +247,7 @@ def register(bot):
             bot.send_message(message.chat.id,"📖 Пән басқарыу",reply_markup=panler_admin_submenu()); return
         new_subject=message.text.strip()
         if len(new_subject)<2 or len(new_subject)>100:
-            msg=bot.send_message(message.chat.id,"❌ 2-100 таңба болуы керек:",reply_markup=back_menu())
+            msg=bot.send_message(message.chat.id,"❌ 2-100 таңба болыуы керек:",reply_markup=back_menu())
             bot.register_next_step_handler(msg,lambda m: handle_variant_subject_edit_save(m,old_subject)); return
         try:
             with db_cursor() as (conn,cursor):
