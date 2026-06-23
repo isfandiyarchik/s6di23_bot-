@@ -53,7 +53,7 @@ def start_scheduler(bot, send_to_students_fn, clean_rate_limit_fn, cleanup_ai_fn
                                     "SELECT subject,time FROM schedule "
                                     "WHERE day=%s ORDER BY time", (today,))
                                 lessons = cursor.fetchall()
-                            msg_ = f"☀️ <b>Қайырлы таң!</b>\n📅 Бүгін: <b>{today}</b>\n\n"
+                            msg_ = f"☀️ <b>Қайырлы таң!</b>\n📅 Бүгин: <b>{today}</b>\n\n"
                             if lessons:
                                 msg_ += "📖 <b>Бүгинги сабақлар:</b>\n"
                                 for i, r in enumerate(lessons, 1):
@@ -93,7 +93,7 @@ def start_scheduler(bot, send_to_students_fn, clean_rate_limit_fn, cleanup_ai_fn
 
 
 def _check_lesson_reminders(bot, now, send_to_students_fn):
-    """Сабақ алдында 15 мин бұрын ескертіу"""
+    """Сабақ алдында 2 мин бұрын ескертиу"""
     try:
         today = DAYS_EN_TO_RU.get(now.strftime("%A"), "")
         with db_cursor() as (_, cursor):
@@ -167,7 +167,7 @@ def _check_birthdays(bot, now, send_to_students_fn):
 
 
 def _check_contract_reminders(bot, now):
-    """Төлем мерзімі ескертіуі — ай сайын 25-інде"""
+    """Төлем уақты ескертиуи — ай сайын 25-инде"""
     key = f"contract_remind_{now.strftime('%Y-%W-%A')}"
     if reminder_already_sent(key):
         return
