@@ -135,17 +135,24 @@ def register(bot):
             "/список — Студентлер дизими\n"
             "/жаңалық — Соңғы жаңалықлар\n"
             "/көмек — Командалар дизими\n\n"
-            "📌 Толық мүмкинликлер үшын ботқа жеке жазыңыз!"
+            "📌 Толық мүмкиншиликлер үшын ботқа жеке жазыңыз!"
         )
         bot.send_message(uid, text)
 
     # Группа чатына қосылған кезде сәлем
+    _bot_id_cache = {"id": None}
+
     @bot.message_handler(
         content_types=["new_chat_members"],
         func=lambda m: m.chat.type in ("group", "supergroup"))
     def group_new_member(message):
+        if _bot_id_cache["id"] is None:
+            try:
+                _bot_id_cache["id"] = bot.get_me().id
+            except Exception:
+                return
         for member in message.new_chat_members:
-            if member.id == bot.get_me().id:
+            if member.id == _bot_id_cache["id"]:
                 # Бот қосылды — adminге ID жібер
                 from handlers.common import ADMIN_IDS
                 for aid in ADMIN_IDS:
@@ -163,4 +170,4 @@ def register(bot):
             else:
                 name = member.first_name or "Студент"
                 bot.send_message(message.chat.id,
-                    f"👋 <b>{name}</b> группаға хош келдиң! 🎉")
+                    f"👋 <b>{name}</b> группаға хош келдиңиз! 🎉")
