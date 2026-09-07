@@ -234,8 +234,8 @@ def main_menu(uid=None):
     m.row("💡 Ұсыныс / Шағым", "📋 Список")
     m.row("📞 Байланыс", "💰 Контракт")
     m.row("📖 Пәнлер", "📊 Сабақ/Ертеңге")
-    m.row("📊 Мениң барлауым")
-    m.row("📝 Имтиханлар менен тапсырмалар")
+    m.row("📊 Мениң барлауым", "📊 Контракт графиги")
+    m.row("📝 Имтиханлар мен тапсырмалар")
     m.row("🤖 AI Көмекши")
     if uid and is_admin(uid): m.row("👮 Админ панель")
     return m
@@ -285,6 +285,7 @@ def contract_submenu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
     m.row("💰 Контракт киргизиу", "➕ Төлем қосыу")
     m.row("📋 Барлық контрактлар")
+    m.row("📊 Контракт диаграммасы")
     m.row("⬅️ Админге қайтыу")
     return m
 
@@ -310,8 +311,9 @@ def excel_submenu():
 
 def attendance_submenu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    m.row("📊 Барлау", "📅 Барлау тарийхы")
+    m.row("📊 Барлау", "📅 Барлау тарихы")
     m.row("📈 Барлау статистикасы")
+    m.row("📊 Барлау диаграммасы")
     m.row("⬅️ Админге қайтыу")
     return m
 
