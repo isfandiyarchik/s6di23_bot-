@@ -20,6 +20,7 @@ def register_all_handlers(bot):
 
     from handlers.group_handler import register as reg_group
     from handlers.exam_handler import register as reg_exam
+    from handlers.chart_handler import register as reg_chart
 
     reg_start(bot)
     reg_admin(bot)
@@ -38,3 +39,4 @@ def register_all_handlers(bot):
     reg_sabak(bot)
     reg_group(bot)
     reg_exam(bot)
+    reg_chart(bot)
