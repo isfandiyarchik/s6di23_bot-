@@ -126,7 +126,7 @@ def check_access(bot):
                 try: bot.send_message(uid, "⛔ <b>Кириуге рұхсат жоқ!</b>\nАдминге хабарласыңыз.")
                 except: pass
                 return
-            if is_rate_limited(uid):
+            if not is_admin(uid) and is_rate_limited(uid):
                 try: bot.send_message(uid, "⏳ Дым тез! Бираздан кейин қайталаңыз.")
                 except: pass
                 return
@@ -232,9 +232,10 @@ def main_menu(uid=None):
     m.row("📰 Жаңалықлар", "📚 Сабақ материаллары")
     m.row("📷 Фото/Видео", "📅 Сабақ кестеси")
     m.row("💡 Ұсыныс / Шағым", "📋 Список")
-    m.row("📞 Байланыс", "💰 Контракт")
+    m.row("📞 Байланыс")
+    m.row("💰 Контракт", "📊 Контракт графигі")
     m.row("📖 Пәнлер", "📊 Сабақ/Ертеңге")
-    m.row("📊 Мениң барлауым", "📊 Контракт графиги")
+    m.row("📊 Мениң барлауым")
     m.row("📝 Имтиханлар менен тапсырмалар")
     m.row("🤖 AI Көмекши")
     if uid and is_admin(uid): m.row("👮 Админ панель")
