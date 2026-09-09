@@ -1,5 +1,5 @@
 """
-Жалпы helper функциялар: меню, утилиты, access decorators
+Улыума helper функциялар: меню, утилиты, access decorators
 """
 import functools
 import time
@@ -25,7 +25,7 @@ MONTHS_RU = {
 WEEKDAYS_RU = {0:"Понедельник",1:"Вторник",2:"Среда",3:"Четверг",
                4:"Пятница",5:"Суббота",6:"Воскресенье"}
 ALLOWED_DELETE_TABLES = {"materials", "gallery", "user_news"}
-GALLERY_UPLOAD_BTN = "📤 Жүклеңіз"
+GALLERY_UPLOAD_BTN = "📤 Жүклеңиз"
 
 # ── ADMIN ─────────────────────────────────────────────────────
 def get_admin_ids():
@@ -123,11 +123,11 @@ def check_access(bot):
                 except: pass
                 return
             if message.text != "/start" and not is_admin(uid) and not is_authorized(uid):
-                try: bot.send_message(uid, "⛔ <b>Кіруге рұхсат жоқ!</b>\nАдминге хабарласыңыз.")
+                try: bot.send_message(uid, "⛔ <b>Кириуге рұхсат жоқ!</b>\nАдминге хабарласыңыз.")
                 except: pass
                 return
             if not is_admin(uid) and is_rate_limited(uid):
-                try: bot.send_message(uid, "⏳ Тым тез! Бірздан кейін қайталаңыз.")
+                try: bot.send_message(uid, "⏳ Дым тез! Бираздан кейин қайталаңыз.")
                 except: pass
                 return
             if not is_admin(uid): _update_last_active(uid)
@@ -218,7 +218,7 @@ def get_online_status(la):
         elif d < 3600: return f"🟡 {int(d//60)} мин бұрын"
         elif d < 86400: return f"🔴 {int(d//3600)} сағ бұрын"
         else: return f"🔴 {int(d//86400)} күн бұрын"
-    except: return "⚪ Белгісіз"
+    except: return "⚪ Белгисиз"
 
 def _is_online(la, now_t):
     try:
@@ -230,14 +230,14 @@ def _is_online(la, now_t):
 def main_menu(uid=None):
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
     m.row("📰 Жаңалықлар", "📚 Сабақ материаллары")
-    m.row("📷 Фото/Видео", "📅 Сабақ кестесі")
+    m.row("📷 Фото/Видео", "📅 Сабақ кестеси")
     m.row("💡 Ұсыныс / Шағым", "📋 Список")
     m.row("📞 Байланыс")
     m.row("📖 Пәнлер")
-    m.row("💰 Контракт", "📊 Контракт графигі")
+    m.row("📝 Имтиханлар менен тапсырмалар")
+    m.row("💰 Контракт", "📊 Контракт графиги")
     m.row("📊 Сабақ/Ертеңге", "📊 Менің барлауым")
-    m.row("📝 Емтихандар мен тапсырмалар")
-    m.row("🤖 AI Көмекші")
+    m.row("🤖 AI Көмекши")
     if uid and is_admin(uid): m.row("👮 Админ панель")
     return m
 
@@ -254,8 +254,8 @@ def admin_menu():
     m.row("📈 Статистика", "📩 Ус/Ша келген")
     m.row("🗑 Өшириу", "📞 Байланыс басқарыу")
     m.row("💰 Контракт басқарыу", "📖 Пән басқарыу")
-    m.row("📝 Емтихан/Тапсырма басқарыу")
-    m.row("🎓 Жаңа оқу жылы")
+    m.row("📝 Имтихан/Тапсырма басқарыу")
+    m.row("🎓 Таза оқыу жылы")
     m.row("🔒 Блок басқарыу")
     m.row("⬅️ Артқа")
     return m
@@ -323,7 +323,7 @@ def block_submenu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
     m.row("🚫 Студентти блоклау")
     m.row("✅ Блоктан шығарыу")
-    m.row("📋 Блокланғанлар дізімі")
+    m.row("📋 Блокланғанлар дизими")
     m.row("⬅️ Админге қайтыу")
     return m
 
@@ -335,7 +335,7 @@ def news_menu():
 
 def materials_menu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    m.row("📥 Мат жүклеңіз", "🗂 Архив материаллар")
+    m.row("📥 Мат жүклеңиз", "🗂 Архив материаллар")
     m.row("⬅️ Артқа")
     return m
 
@@ -361,7 +361,7 @@ def sabak_menu():
 
 def sebep_file_menu():
     m = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    m.row("⏭ Өткізіп жіберіу")
+    m.row("⏭ Өткизип жибериу")
     m.row("⬅️ Артқа")
     return m
 
