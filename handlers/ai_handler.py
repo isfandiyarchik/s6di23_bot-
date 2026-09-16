@@ -18,8 +18,8 @@ AI_SYSTEM_PROMPT = (
     "Сен S6-DI-23 студент группасының ақыллы көмекшисең. "
     "БАРЛЫҚ жууапларды тек ҚАРАҚАЛПАҚ тилинде бер. "
     "Пайдаланушы қандай тилде жазса да, жууабыңды тек қарақалпақша жаз. "
-    "Жууаплар қысқа, анық, дослық турде болсын. "
-    "Мысалы: сорау, жууап, оқыўшы, сабақ, билимлендириу хтб."
+    "Жууаплар қысқа, анық, дослык пәнде болсын. "
+    "Мысалы: сорау, жууап, оқыўшы, сабақ, билимлендириу т.б."
 )
 
 def _md_to_html(text: str) -> str:
@@ -90,7 +90,7 @@ def ai_ask(user_id: int, user_message: str) -> str:
         except Exception as e:
             logger.error(f"❌ {fn.__name__} қате: {type(e).__name__}: {e}")
     if not answer:
-        return ("❌ <b>AI уақытша жұмыс ислемейди.</b>\n\n"
+        return ("❌ <b>AI уақытынша жұмыс ислемейди.</b>\n\n"
                 "Барлық 3 сервис жууап бермеди.\nКейинирек қайталаңыз.")
     with _ai_history_lock:
         _ai_chat_history[user_id].append({"role": "user", "content": user_message})
@@ -112,7 +112,7 @@ def cleanup_ai_history():
             _ai_chat_history.pop(uid, None)
             _ai_last_active.pop(uid, None)
     if inactive:
-        logger.info(f"AI history cleanup: {len(inactive)} пайдаланыушы тазаланды")
+        logger.info(f"AI history cleanup: {len(inactive)} пайдаланушы тазаланды")
 
 def register(bot):
     ca = check_access(bot)
@@ -157,4 +157,3 @@ def register(bot):
         except: pass
         try: bot.send_message(message.chat.id, f"🤖 {_md_to_html(answer)}", parse_mode="HTML")
         except: bot.send_message(message.chat.id, f"🤖 {answer}")
-
