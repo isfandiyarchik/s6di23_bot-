@@ -36,7 +36,7 @@ def register(bot):
             msg = bot.send_message(message.chat.id, "❌ Дұрыс ID жазыңыз:", reply_markup=back_menu())
             bot.register_next_step_handler(msg, handle_block_user); return
         if uid in ADMIN_IDS:
-            bot.send_message(message.chat.id, "❌ Admin-ди блоклауға болмайды!", reply_markup=block_submenu()); return
+            bot.send_message(message.chat.id, "❌ Admin-ді блоклауға болмайды!", reply_markup=block_submenu()); return
         try:
             with db_cursor() as (conn, cursor):
                 cursor.execute(
@@ -49,7 +49,7 @@ def register(bot):
             try: bot.send_message(uid, "⛔ Сиз блокландыңыз. Admin-ге хабарласыңыз.")
             except: pass
         except Exception as e:
-            bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=block_submenu())
+            bot.send_message(message.chat.id, f"❌ DB қатесі: {e}", reply_markup=block_submenu())
 
     @bot.message_handler(func=lambda m: m.text == "✅ Блоктан шығарыу")
     @ca
@@ -84,7 +84,7 @@ def register(bot):
             bot.send_message(message.chat.id,
                 f"✅ <code>{uid}</code> блоктан шығарылды!", reply_markup=block_submenu())
         except Exception as e:
-            bot.send_message(message.chat.id, f"❌ DB қатеси: {e}", reply_markup=block_submenu())
+            bot.send_message(message.chat.id, f"❌ DB қатесі: {e}", reply_markup=block_submenu())
 
     @bot.message_handler(func=lambda m: m.text == "📋 Блокланғанлар дизими")
     @ca
