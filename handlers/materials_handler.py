@@ -76,9 +76,9 @@ def register(bot):
             rows = cursor.fetchall()
         if not rows:
             bot.send_message(message.chat.id, "📭 Архив бос.", reply_markup=materials_menu()); return
-        bot.send_message(message.chat.id, f"🗂 <b>Барлығы: {len(rows)}</b>\n\nЖүклеуде...")
+        bot.send_message(message.chat.id, f"🗂 <b>Барлығы: {len(rows)}</b>\n\nЖүклениуде...")
         for r in rows:
-            uname = f"@{r[3]}" if r[3] else "Белгисиз"
+            uname = f"@{r[3]}" if r[3] else "Белгісіз"
             cap = f"👤 {uname}\n🕐 {r[2]}"
             try:
                 if r[1] == "document": bot.send_document(message.chat.id, r[0], caption=cap)
