@@ -32,7 +32,7 @@ def register(bot):
             conn.commit()
         clear_user_state(uid)
         bot.send_message(uid,
-            "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлымын.\nБөлимди таңлаңыз:",
+            "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлыман.\nБөлимди таңлаңыз:",
             reply_markup=main_menu(uid))
 
     @bot.message_handler(commands=["help"])
@@ -48,8 +48,8 @@ def register(bot):
             "/start — Ботты баслау\n"
             "/help — Көмек\n"
             "/ai — AI менен сөйлесиу\n"
-            "/info — Бот ҳаққында мағлыумат\n\n"
-            "📌 <b>Меню батырмаларын қолланыңыз!</b>"
+            "/info — Бот ҳаккында мағлыумат\n\n"
+            "📌 <b>Меню командаларын қолланыңыз!</b>"
         )
         bot.send_message(uid, text, reply_markup=main_menu(uid))
 
@@ -95,4 +95,3 @@ def register(bot):
             "📌 <b>Версия:</b> 2.0"
         )
         bot.send_message(uid, text, reply_markup=main_menu(uid))
-
