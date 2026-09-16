@@ -53,7 +53,7 @@ def register(bot):
                 "📭 Жақын арада имтихан жоқ.",
                 reply_markup=exam_menu()); return
 
-        text = "📝 <b>Жақындағы имтиханлар:</b>\n\n"
+        text = "📝 <b>Жақынлаған имтиханлар:</b>\n\n"
         for r in rows:
             exam_dt = datetime.strptime(r[2], "%Y-%m-%d")
             days_left = (exam_dt.date() - now.date()).days
@@ -83,14 +83,14 @@ def register(bot):
             rows = cursor.fetchall()
         if not rows:
             bot.send_message(message.chat.id,
-                "📭 Белсенди тапсырма жоқ.",
+                "📭 Айтарлык тапсырма жоқ.",
                 reply_markup=exam_menu()); return
 
-        text = "📋 <b>Тапсырмалар / Дедлайнлар:</b>\n\n"
+        text = "📋 <b>Тапсырмалар / Дедлайндар:</b>\n\n"
         for r in rows:
             dl_dt = datetime.strptime(r[3], "%Y-%m-%d")
             days_left = (dl_dt.date() - now.date()).days
-            if days_left < 0: badge = "❌ <b>Уақты өтти!</b>"
+            if days_left < 0: badge = "❌ <b>Уакты өтти!</b>"
             elif days_left == 0: badge = "🔴 <b>БҮГИН тапсыру керек!</b>"
             elif days_left == 1: badge = "🟠 <b>ЕРТЕҢ дедлайн!</b>"
             elif days_left <= 3: badge = f"🟡 <b>{days_left} күн қалды</b>"
@@ -124,7 +124,7 @@ def register(bot):
         msg = bot.send_message(message.chat.id,
             "➕ <b>Имтихан қосыу:</b>\n\n"
             "Формат: <code>Пән;Күни;Уақыты;Орны;Ескертиу</code>\n\n"
-            "Мысал: <code>Информатика;2026-06-20;09:00;303 аудитория;Телефон рұхсат</code>\n\n"
+            "Мысал: <code>Математика;2026-06-20;09:00;303 аудитория;Калькулятор рұхсат</code>\n\n"
             "⚠️ Күн форматы: <code>ЖЖЖЖ-АА-КК</code>",
             reply_markup=back_menu())
         bot.register_next_step_handler(msg, handle_add_exam)
@@ -184,7 +184,7 @@ def register(bot):
         msg = bot.send_message(message.chat.id,
             "➕ <b>Тапсырма қосыу:</b>\n\n"
             "Формат: <code>Пән;Тапсырма аты;Дедлайн;Ескертиу</code>\n\n"
-            "Мысал: <code>Паннен;Оз бетинше жұмысы;2026-06-18;1-3 тапсырма</code>\n\n"
+            "Мысал: <code>Физика;Лаборатория жұмысы;2026-06-18;1-3 тапсырма</code>\n\n"
             "⚠️ Дедлайн форматы: <code>ЖЖЖЖ-АА-КК</code>",
             reply_markup=back_menu())
         bot.register_next_step_handler(msg, handle_add_task)
@@ -266,7 +266,7 @@ def register(bot):
                 cursor.execute("DELETE FROM exams WHERE id=%s", (rid,))
                 conn.commit()
             bot.send_message(message.chat.id,
-                f"✅ <b>{row[0]}</b> имтихан өширилди.",
+                f"✅ <b>{row[0]}</b> имтиханы өширилди.",
                 reply_markup=exam_admin_menu())
         except ValueError:
             msg = bot.send_message(message.chat.id, "❌ Тек сан ID жазыңыз:",
