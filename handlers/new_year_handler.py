@@ -39,7 +39,7 @@ def register(bot):
             f"⚠️ <b>Ескертиу:</b>\n"
             f"• Барлауды тазартқанда — данныйлар <b>архивке</b> сақланады\n"
             f"• Контрактларды тазартқанда — төлем тарихы <b>өшириледи</b>\n"
-            f"• Бұл әрекетлер <b>қайтарылмайды!</b>",
+            f"• Бұл хәрекетлер <b>қайтарылмайды!</b>",
             reply_markup=new_year_admin_menu())
 
     @bot.message_handler(func=lambda m: m.text == "🎓 Таза оқыу жылын баслау")
@@ -53,19 +53,19 @@ def register(bot):
         markup = types.InlineKeyboardMarkup()
         markup.add(
             types.InlineKeyboardButton(
-                "✅ Ауа, жаңа жылды баслау",
+                "✅ Ауа, таза жылды баслау",
                 callback_data=f"new_year_confirm_{year}"),
             types.InlineKeyboardButton(
-                "❌ Жоқ, болдырма",
+                "❌ Яқ, болдырма",
                 callback_data="new_year_cancel"))
         bot.send_message(message.chat.id,
             f"⚠️ <b>Раслаңыз!</b>\n\n"
             f"🎓 <b>{year}-{year+1} оқыу жылын баслау</b>\n\n"
-            f"Бұл әрекет:\n"
+            f"Бұл хәрекет:\n"
             f"• 📊 Барлауды архивке сақлайды және тазартады\n"
             f"• 💰 Контракт төлемлерин тазартады\n"
             f"• 📨 Барлық студентке хабарлама жибереди\n\n"
-            f"Жалғастырасыз ба?",
+            f"Дауам еттиресиз ба?",
             reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda c: c.data.startswith("new_year_confirm_"))
@@ -81,7 +81,7 @@ def register(bot):
         results = []
         errors = []
 
-        # 1. Барлауды archive кестесине сақла
+        # 1. Барлауды archive кестесіне сақта
         try:
             with db_cursor() as (conn, cursor):
                 # archive_attendance кестесі бар ма тексер
@@ -111,10 +111,10 @@ def register(bot):
             errors.append(f"❌ Барлау: {e}")
             logger.error(f"new_year attendance: {e}", exc_info=True)
 
-        # 2. Контракт төлемлерин тазарт (контракт суммасы қалады)
+        # 2. Контракт төлемдерін тазарт (контракт суммасы қалады)
         try:
             with db_cursor() as (conn, cursor):
-                # Контракт төлемлерин архивке сақла
+                # Контракт төлемдерін архивке сақта
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS archive_contract_payments (
                         id SERIAL PRIMARY KEY,
@@ -130,7 +130,7 @@ def register(bot):
                     FROM contract_payments
                 """, (f"{year-1}-{year}",))
                 archived_pay = cursor.rowcount
-                # Контракт төлемлерин тазарт
+                # Контракт төлемдерін тазарт
                 cursor.execute("DELETE FROM contract_payments")
                 # Контракт суммаларын да тазарт (жаңа жылға жаңа сумма қойылады)
                 cursor.execute("DELETE FROM contracts")
@@ -159,7 +159,7 @@ def register(bot):
         except Exception as e:
             errors.append(f"❌ Ескертиулер: {e}")
 
-        # 5. Студентлерге хабарлама жибер
+        # 5. Студентлерге хабарлама жібер
         try:
             send_to_students(bot,
                 text=(f"🎓 <b>Таза {year}-{year+1} оқыу жылы мүбәрек болсын!</b>\n\n"
@@ -186,14 +186,14 @@ def register(bot):
         bot.send_message(call.message.chat.id,
             "✅ Таза оқыу жылы тайын!\n\n"
             "📌 Енди:\n"
-            "1. Әр студентке таза контракт суммасын қосыңыз\n"
+            "1. Хар студентке таза контракт суммасын қосыңыз\n"
             "2. Сабақ кестесин тазартыңыз",
             reply_markup=admin_menu())
 
     @bot.callback_query_handler(func=lambda c: c.data == "new_year_cancel")
     def new_year_cancelled(call):
-        bot.answer_callback_query(call.id, "❌ Болмады")
-        bot.edit_message_text("❌ <b>Таза оқыу жылы болмады.</b>",
+        bot.answer_callback_query(call.id, "❌ Исленбеди")
+        bot.edit_message_text("❌ <b>Таза оқыу жылы исленбеди.</b>",
             call.message.chat.id, call.message.message_id)
 
     # ── ЖЕКЕ: тек барлауды тазарту ───────────────────────────
@@ -206,9 +206,9 @@ def register(bot):
         markup = types.InlineKeyboardMarkup()
         markup.add(
             types.InlineKeyboardButton("✅ Ауа", callback_data="clear_att_confirm"),
-            types.InlineKeyboardButton("❌ Яқ", callback_data="new_year_cancel"))
+            types.InlineKeyboardButton("❌ Жоқ", callback_data="new_year_cancel"))
         bot.send_message(message.chat.id,
-            "⚠️ Барлауды тазартасыз ба?\nДанныйлар архивке сақланды.",
+            "⚠️ Барлауды тазартасыз ба?\nДанныйлар архивке сақланады.",
             reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda c: c.data == "clear_att_confirm")
@@ -237,7 +237,7 @@ def register(bot):
                 conn.commit()
             bot.answer_callback_query(call.id, "✅ Тазартылды!")
             bot.edit_message_text(
-                f"✅ Барлау тазартылды!\n📦 {cnt} жазба архивке сақланды.",
+                f"✅ Барлау тазартылды!\n📦 {cnt} жазба архивке сақланады.",
                 call.message.chat.id, call.message.message_id)
         except Exception as e:
             bot.answer_callback_query(call.id, "❌ Қате!")
@@ -254,9 +254,9 @@ def register(bot):
         markup = types.InlineKeyboardMarkup()
         markup.add(
             types.InlineKeyboardButton("✅ Ауа", callback_data="clear_cont_confirm"),
-            types.InlineKeyboardButton("❌ Яқ", callback_data="new_year_cancel"))
+            types.InlineKeyboardButton("❌ Жоқ", callback_data="new_year_cancel"))
         bot.send_message(message.chat.id,
-            "⚠️ Контракт төлемлерин тазартасыз ба?\nАрхивке сақланды.",
+            "⚠️ Контракт төлемлерин тазартасыз ба?\nАрхивке сақланады.",
             reply_markup=markup)
 
     @bot.callback_query_handler(func=lambda c: c.data == "clear_cont_confirm")
