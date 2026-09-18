@@ -57,7 +57,7 @@ def _ai_try_groq(messages):
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
-def _ai_try_deepseek(messages):
+def _ai_try_deepseek_chat(messages):
     import requests
 
     api_key = os.environ.get("DEEPSEEK_API_KEY", "")
@@ -81,6 +81,29 @@ def _ai_try_deepseek(messages):
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
+def _ai_try_deepseek_reasoner(messages):
+    import requests
+
+    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not api_key:
+        raise ValueError("DEEPSEEK_API_KEY жоқ")
+    resp = requests.post(
+        "https://api.deepseek.com/chat/completions",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        json={
+            "model": "deepseek-reasoner",
+            "messages": messages,
+            "max_tokens": 1500,
+        },
+        timeout=45,
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"].strip()
+
+
 def ai_ask(user_id: int, user_message: str) -> str:
     with _ai_history_lock:
         if user_id not in _ai_chat_history:
@@ -93,10 +116,11 @@ def ai_ask(user_id: int, user_message: str) -> str:
     messages.append({"role": "user", "content": user_message})
     answer = None
 
-    # Тек 1. Groq ҳәм 2. DeepSeek кезеклесиўи
+    # Groq -> DeepSeek Chat -> DeepSeek Reasoner (R1) кезеклесиўи
     for fn, args in [
         (_ai_try_groq, (messages,)),
-        (_ai_try_deepseek, (messages,)),
+        (_ai_try_deepseek_chat, (messages,)),
+        (_ai_try_deepseek_reasoner, (messages,)),
     ]:
         try:
             answer = fn(*args)
@@ -163,7 +187,7 @@ def register(bot):
             message.chat.id,
             "🤖 <b>AI Көмекши иске қосылды!</b>\n\n"
             "✏️ Кез-келген сорауыңызды жазыңыз.\n\n"
-            "⚡ <i>Groq → DeepSeek (автоматты резерв)</i>",
+            "⚡ <i>Groq → DeepSeek Chat → DeepSeek Reasoner (автоматты резерв)</i>",
             reply_markup=markup,
             parse_mode="HTML",
         )
