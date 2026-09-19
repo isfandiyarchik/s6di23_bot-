@@ -19,8 +19,7 @@ AI_SYSTEM_PROMPT = (
     "Сен S6-DI-23 студент группасының ақыллы көмекшисең. "
     "БАРЛЫҚ жууапларды тек ҚАРАҚАЛПАҚ тилинде бер. "
     "Пайдаланушы қандай тилде жазса да, жууабыңды тек қарақалпақша жаз. "
-    "Жууаплар қысқа, анық, дослык пәнде болсын. "
-    "Мысалы: сорау, жууап, оқыўшы, сабақ, билимлендириу т.б."
+    "Жууаплар қысқа, анық, дослык мәнде болсын."
 )
 
 
@@ -57,51 +56,53 @@ def _ai_try_groq(messages):
     return resp.json()["choices"][0]["message"]["content"].strip()
 
 
-def _ai_try_deepseek_chat(messages):
+def _ai_try_gemini(user_message, history):
     import requests
 
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
     if not api_key:
-        raise ValueError("DEEPSEEK_API_KEY жоқ")
+        raise ValueError("GOOGLE_API_KEY жоқ")
+    contents = []
+    for msg in history:
+        role = "user" if msg["role"] == "user" else "model"
+        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+    contents.append({"role": "user", "parts": [{"text": user_message}]})
     resp = requests.post(
-        "https://api.deepseek.com/chat/completions",
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+        headers={"Content-Type": "application/json"},
+        json={
+            "system_instruction": {"parts": [{"text": AI_SYSTEM_PROMPT}]},
+            "contents": contents,
+            "generationConfig": {"maxOutputTokens": 1000, "temperature": 0.7},
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
+def _ai_try_cohere(messages):
+    import requests
+
+    api_key = os.environ.get("COHERE_API_KEY", "")
+    if not api_key:
+        raise ValueError("COHERE_API_KEY жоқ")
+    resp = requests.post(
+        "https://api.cohere.com/v1/chat",
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
         },
         json={
-            "model": "deepseek-chat",
-            "messages": messages,
-            "max_tokens": 1000,
+            "model": "command-r-plus",
+            "message": messages[-1]["content"],
+            "preamble": AI_SYSTEM_PROMPT,
             "temperature": 0.7,
         },
         timeout=30,
     )
     resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
-
-
-def _ai_try_deepseek_reasoner(messages):
-    import requests
-
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
-    if not api_key:
-        raise ValueError("DEEPSEEK_API_KEY жоқ")
-    resp = requests.post(
-        "https://api.deepseek.com/chat/completions",
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-        json={
-            "model": "deepseek-reasoner",
-            "messages": messages,
-            "max_tokens": 1500,
-        },
-        timeout=45,
-    )
-    resp.raise_for_status()
-    return resp.json()["choices"][0]["message"]["content"].strip()
+    return resp.json()["text"].strip()
 
 
 def ai_ask(user_id: int, user_message: str) -> str:
@@ -116,11 +117,11 @@ def ai_ask(user_id: int, user_message: str) -> str:
     messages.append({"role": "user", "content": user_message})
     answer = None
 
-    # Groq -> DeepSeek Chat -> DeepSeek Reasoner (R1) кезеклесиўи
+    # Groq -> Gemini 2.0 Flash -> Cohere резерв кезеклесиўи
     for fn, args in [
         (_ai_try_groq, (messages,)),
-        (_ai_try_deepseek_chat, (messages,)),
-        (_ai_try_deepseek_reasoner, (messages,)),
+        (_ai_try_gemini, (user_message, history_snapshot)),
+        (_ai_try_cohere, (messages,)),
     ]:
         try:
             answer = fn(*args)
@@ -131,7 +132,7 @@ def ai_ask(user_id: int, user_message: str) -> str:
     if not answer:
         return (
             "❌ <b>AI уақытынша жұмыс ислемейди.</b>\n\n"
-            "Сервислер жууап бермеди.\nКейинирек қайталаңыз."
+            "Барлық бийпул сервислер жууап бермеди.\nКейинирек қайталаңыз."
         )
 
     with _ai_history_lock:
@@ -164,10 +165,6 @@ def cleanup_ai_history():
         for uid in inactive:
             _ai_chat_history.pop(uid, None)
             _ai_last_active.pop(uid, None)
-    if inactive:
-        logger.info(
-            f"AI history cleanup: {len(inactive)} пайдаланушы тазаланды"
-        )
 
 
 def register(bot):
@@ -187,7 +184,7 @@ def register(bot):
             message.chat.id,
             "🤖 <b>AI Көмекши иске қосылды!</b>\n\n"
             "✏️ Кез-келген сорауыңызды жазыңыз.\n\n"
-            "⚡ <i>Groq → DeepSeek Chat → DeepSeek Reasoner (автоматты резерв)</i>",
+            "⚡ <i>Groq → Gemini 2.0 Flash → Cohere (автоматты резерв)</i>",
             reply_markup=markup,
             parse_mode="HTML",
         )
