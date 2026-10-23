@@ -95,3 +95,19 @@ def register(bot):
             "📌 <b>Версия:</b> 2.0"
         )
         bot.send_message(uid, text, reply_markup=main_menu(uid))
+
+    @bot.message_handler(func=lambda m: m.text == "🎓 HEMIS")
+    def hemis_cmd(message):
+        uid = message.from_user.id
+        is_group = message.chat.type in ("group", "supergroup")
+        if is_group:
+            try: bot.delete_message(message.chat.id, message.message_id)
+            except: pass
+        from telebot import types
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(
+            "🎓 HEMIS кабинетке кириу", url="https://student.nukusii.uz/dashboard/login"))
+        bot.send_message(uid,
+            "🎓 <b>HEMIS Student Cabinet</b>\n\n"
+            "Нукус ИИ студент кабинетине кириу үшын төмендеги кнопканы басыңыз:",
+            reply_markup=markup)
