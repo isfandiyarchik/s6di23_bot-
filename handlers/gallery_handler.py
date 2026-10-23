@@ -71,17 +71,54 @@ def register(bot):
     @ca
     def show_gallery_view(message):
         with db_cursor() as (_, cursor):
-            cursor.execute("SELECT file_id,file_type,date,uploader_username FROM gallery ORDER BY date DESC")
+            cursor.execute(
+                "SELECT file_id,file_type,date,uploader_username FROM gallery ORDER BY date DESC")
             rows = cursor.fetchall()
         if not rows:
-            bot.send_message(message.chat.id, "📭 Галерея бос.", reply_markup=gallery_menu()); return
-        bot.send_message(message.chat.id, f"🎞 <b>Барлығы: {len(rows)}</b>\n\nЖүклеуде...")
-        for r in rows:
-            uname = f"@{r[3]}" if r[3] else "Белгисиз"
-            cap = f"👤 {uname}\n📅 {r[2]}"
-            try:
-                if r[1] == "photo": bot.send_photo(message.chat.id, r[0], caption=cap)
-                elif r[1] == "video": bot.send_video(message.chat.id, r[0], caption=cap)
-            except: continue
-        bot.send_message(message.chat.id, "✅ Тайын.", reply_markup=gallery_menu())
+            bot.send_message(message.chat.id, "📭 Галерея бос.",
+                reply_markup=gallery_menu()); return
 
+        # Фото топтап медиа группасы ретінде жіберу
+        photos = [(r[0], r[1], r[2], r[3]) for r in rows if r[1] == "photo"]
+        videos = [(r[0], r[1], r[2], r[3]) for r in rows if r[1] == "video"]
+
+        bot.send_message(message.chat.id,
+            f"🎞 <b>S6-DI-23 естелиги</b>\n"
+            f"📸 Фото: {len(photos)} | 🎬 Видео: {len(videos)}")
+
+        # Фотоларды медиа группасымен жібер (10-дан)
+        from telebot.types import InputMediaPhoto, InputMediaVideo
+        all_media = rows[:50]  # Макс 50
+
+        chunk_size = 10
+        for i in range(0, len(all_media), chunk_size):
+            chunk = all_media[i:i+chunk_size]
+            media_group = []
+            for r in chunk:
+                file_id, file_type, date, uname = r[0], r[1], r[2], r[3]
+                uploader = f"@{uname}" if uname else "S6-DI-23"
+                caption = f"👤 {uploader}\n📅 {date}" if len(media_group) == 0 else None
+                try:
+                    if file_type == "photo":
+                        media_group.append(InputMediaPhoto(file_id, caption=caption))
+                    elif file_type == "video":
+                        media_group.append(InputMediaVideo(file_id, caption=caption))
+                except Exception:
+                    continue
+            if media_group:
+                try:
+                    bot.send_media_group(message.chat.id, media_group)
+                except Exception as e:
+                    # Медиа группасы жұмыс ислемесе — жекеме жибер
+                    for r in chunk:
+                        try:
+                            uname = f"@{r[3]}" if r[3] else "Белгисиз"
+                            cap = f"👤 {uname}\n📅 {r[2]}"
+                            if r[1] == "photo":
+                                bot.send_photo(message.chat.id, r[0], caption=cap)
+                            elif r[1] == "video":
+                                bot.send_video(message.chat.id, r[0], caption=cap)
+                        except Exception:
+                            continue
+
+        bot.send_message(message.chat.id, "✅ Тайын!", reply_markup=gallery_menu())
