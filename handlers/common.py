@@ -113,7 +113,7 @@ def check_access(bot):
         @functools.wraps(func)
         def wrapper(message):
             uid = message.from_user.id
-            # Группа чатта келсе — хабарламаны өшир, жууапты жеке жибер
+            # Группа чатта келсе — хабарламаны өшир, жууапты жекеге жибер
             is_group = message.chat.type in ("group", "supergroup")
             if is_group:
                 try: bot.delete_message(message.chat.id, message.message_id)
@@ -237,7 +237,6 @@ def main_menu(uid=None):
     m.row("📝 Имтиханлар менен тапсырмалар")
     m.row("💰 Контракт", "📊 Контракт графиги")
     m.row("📊 Сабақ/Ертеңге", "📊 Мениң барлауым")
-    m.row("🎓 HEMIS")
     if uid and is_admin(uid): m.row("👮 Админ панель")
     return m
 
