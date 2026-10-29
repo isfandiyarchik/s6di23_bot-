@@ -7,9 +7,10 @@ from handlers.common import (
 def register(bot):
     ca = check_access(bot)
 
-    @bot.message_handler(func=lambda m: m.text == "💰 Контракт")
-    @ca
-    def show_contract_user(message):
+    @bot.message_handler(commands=["contract"])
+@bot.message_handler(func=lambda m: m.text == "💰 Контракт")
+@ca
+def show_contract_user(message):
         uid = message.from_user.id
         with db_cursor() as (_, cursor):
             cursor.execute("SELECT total_amount,note FROM contracts WHERE student_id=%s", (uid,))
