@@ -7,9 +7,10 @@ from handlers.common import (
 def register(bot):
     ca = check_access(bot)
 
-    @bot.message_handler(func=lambda m: m.text == "📞 Байланыс")
-    @ca
-    def show_contacts(message):
+    @bot.message_handler(commands=["contacts"])
+@bot.message_handler(func=lambda m: m.text == "📞 Байланыс")
+@ca
+def show_contacts(message):
         with db_cursor() as (_, cursor):
             cursor.execute("SELECT type,name,phone FROM contacts ORDER BY type,name")
             rows = cursor.fetchall()
