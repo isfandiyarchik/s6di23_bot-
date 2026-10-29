@@ -96,8 +96,9 @@ def register(bot):
         )
         bot.send_message(uid, text, reply_markup=main_menu(uid))
 
-    @bot.message_handler(func=lambda m: m.text == "🎓 HEMIS")
-    def hemis_cmd(message):
+    @bot.message_handler(commands=["hemis"])
+@bot.message_handler(func=lambda m: m.text == "🎓 HEMIS")
+def hemis_cmd(message):
         uid = message.from_user.id
         is_group = message.chat.type in ("group", "supergroup")
         if is_group:
