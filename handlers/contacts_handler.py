@@ -1,6 +1,6 @@
 from database import db_cursor
 from handlers.common import (
-    is_admin, check_access,
+    is_admin, check_access, send_long_message,
     back_menu, contacts_submenu, main_menu
 )
 
@@ -8,28 +8,40 @@ def register(bot):
     ca = check_access(bot)
 
     @bot.message_handler(commands=["contacts"])
-@bot.message_handler(func=lambda m: m.text == "📞 Байланыс")
-@ca
-def show_contacts(message):
+    @bot.message_handler(func=lambda m: m.text == "📞 Байланыс")
+    @ca
+    def show_contacts(message):
+        uid = message.from_user.id
         with db_cursor() as (_, cursor):
             cursor.execute("SELECT type,name,phone FROM contacts ORDER BY type,name")
             rows = cursor.fetchall()
-        if not rows:
+            cursor.execute(
+                "SELECT full_name,phone FROM students "
+                "WHERE full_name IS NOT NULL AND full_name!='' ORDER BY full_name")
+            students = cursor.fetchall()
+        if not rows and not students:
             bot.send_message(message.chat.id, "📭 Байланыс мағлұматы жоқ.",
-                reply_markup=main_menu(message.from_user.id)); return
-        dekanat = [(r[1],r[2]) for r in rows if r[0]=="dekanat"]
-        mugallim = [(r[1],r[2]) for r in rows if r[0]=="mugallim"]
+                reply_markup=main_menu(uid)); return
+        dekanat = [(r[1], r[2]) for r in rows if r[0] == "dekanat"]
+        mugallim = [(r[1], r[2]) for r in rows if r[0] == "mugallim"]
+        sep = "─" * 25
         text = "📞 <b>Байланыс</b>\n\n"
         if dekanat:
-            text += "🏛 <b>Деканат:</b>\n" + "─"*25 + "\n"
+            text += "🏛 <b>Деканат:</b>\n" + sep + "\n"
             for name, phone in dekanat:
-                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + "─"*25 + "\n"
+                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + sep + "\n"
             text += "\n"
         if mugallim:
-            text += "👨‍🏫 <b>Муғаллимлер:</b>\n" + "─"*25 + "\n"
+            text += "👨‍🏫 <b>Муғаллимлер:</b>\n" + sep + "\n"
             for name, phone in mugallim:
-                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + "─"*25 + "\n"
-        bot.send_message(message.chat.id, text, reply_markup=main_menu(message.from_user.id))
+                text += f"👤 <b>{name}</b>\n📞 <code>{phone}</code>\n" + sep + "\n"
+            text += "\n"
+        if students:
+            text += f"👥 <b>Студентлер ({len(students)}):</b>\n" + sep + "\n"
+            for name, phone in students:
+                ph = f"<code>{phone}</code>" if phone else "—"
+                text += f"👤 <b>{name}</b>\n📞 {ph}\n" + sep + "\n"
+        send_long_message(bot, message.chat.id, text, reply_markup=main_menu(uid))
 
     @bot.message_handler(func=lambda m: m.text == "📞 Байланыс басқарыу")
     @ca
