@@ -204,7 +204,8 @@ def register(bot):
 
     @bot.message_handler(
         content_types=["text"],
-        func=lambda m: get_user_state(m.from_user.id) == "ai_chat"
+        func=lambda m: m.chat.type == "private"
+        and get_user_state(m.from_user.id) == "ai_chat"
         and m.text not in ("⬅️ Артқа", "🗑 Тарихты тазалау"),
     )
     @ca
