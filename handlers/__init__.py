@@ -1,5 +1,5 @@
 """
-Барлық handler-ларды тіркеу
+Барлық handler-ларды тиркеу
 """
 def register_all_handlers(bot):
     from handlers.start_handler import register as reg_start
@@ -36,9 +36,12 @@ def register_all_handlers(bot):
     reg_student(bot)
     reg_block(bot)
     reg_excel(bot)
-    reg_ai(bot)
     reg_sabak(bot)
     reg_group(bot)
     reg_exam(bot)
     reg_chart(bot)
     reg_new_year(bot)
+
+    # AI catch-all (ai_chat) ХӘР ҚАШАН СОҢЫНДА тиркелиуи керек,
+    # әйтпесе басқа handler-ларға арналған батырмаларды жұтып қояды
+    reg_ai(bot)
