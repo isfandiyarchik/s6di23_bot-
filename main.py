@@ -38,7 +38,7 @@ def ping(): return "pong", 200
 init_db()
 
 # ── HANDLERS IMPORT ───────────────────────────────────────────
-# Барлық handler-ларды bot-қа тіркейміз
+# Барлық handler-ларды bot-қа тиркеймиз
 from handlers import register_all_handlers
 register_all_handlers(bot)
 
@@ -57,6 +57,24 @@ start_scheduler(
     clean_rate_limit_fn=clean_rate_limit,
     cleanup_ai_fn=cleanup_ai_history
 )
+
+# ── TELEGRAM МЕНЮ (☰ командалар тізімі) ───────────────────────
+def setup_bot_menu():
+    """BotFather-дағы HEMIS web-app батырмасын командалар менюине қайтарады
+    және 5 команданы кодтан орнатады (BotFather-мен хәр қашан сәйкес болады)."""
+    from telebot import types as tg_types
+    try:
+        bot.set_my_commands([
+            tg_types.BotCommand("start", "🏠 Ботты баслау"),
+            tg_types.BotCommand("ai", "🤖 AI Көмекши"),
+            tg_types.BotCommand("hemis", "🎓 HEMIS кабинет"),
+            tg_types.BotCommand("contacts", "📞 Байланыс"),
+            tg_types.BotCommand("contract", "💰 Контракт"),
+        ])
+        bot.set_chat_menu_button(menu_button=tg_types.MenuButtonCommands())
+        logger.info("✅ Telegram меню орнатылды: 5 команда")
+    except Exception as e:
+        logger.warning(f"setup_bot_menu қатесі: {e}")
 
 # ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
@@ -82,6 +100,7 @@ if __name__ == "__main__":
                 logger.error(f"Polling қате: {e}", exc_info=True)
                 time.sleep(5)
 
+    setup_bot_menu()
     Thread(target=run_bot, daemon=True).start()
     logger.info("🤖 S6-DI-23 Bot иске қосылды!")
 
