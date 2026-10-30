@@ -1,5 +1,5 @@
 from database import db_cursor, now_uz, clear_user_state
-from handlers.common import is_blocked, is_admin, ADMIN_IDS, main_menu
+from handlers.common import is_blocked, is_admin, is_authorized, ADMIN_IDS, main_menu
 
 def register(bot):
     @bot.message_handler(commands=["start"])
@@ -97,18 +97,21 @@ def register(bot):
         bot.send_message(uid, text, reply_markup=main_menu(uid))
 
     @bot.message_handler(commands=["hemis"])
-@bot.message_handler(func=lambda m: m.text == "🎓 HEMIS")
-def hemis_cmd(message):
+    def hemis_cmd(message):
         uid = message.from_user.id
         is_group = message.chat.type in ("group", "supergroup")
         if is_group:
             try: bot.delete_message(message.chat.id, message.message_id)
             except: pass
+        if is_blocked(uid) or not is_authorized(uid):
+            bot.send_message(uid, "⛔ Рұхсат жоқ. Админге хабарласыңыз.")
+            return
         from telebot import types
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton(
-            "🎓 HEMIS кабинетке кириу", url="https://student.nukusii.uz/dashboard/login"))
+            "🎓 HEMIS кабинетке кириу",
+            url="https://student.nukusii.uz/dashboard/login"))
         bot.send_message(uid,
             "🎓 <b>HEMIS Student Cabinet</b>\n\n"
-            "Нукус ИИ студент кабинетине кириу үшын төмендеги кнопканы басыңыз:",
+            "Нукус ИИ студент кабинетине кириу үшын батырманы басыңыз:",
             reply_markup=markup)
