@@ -1,4 +1,7 @@
+import html
+import threading
 from database import db_cursor, now_uz, clear_user_state
+from handlers.menu_setup import setup_all_menus, ensure_chat_menu, read_state
 from handlers.common import is_blocked, is_admin, is_authorized, ADMIN_IDS, main_menu
 
 def register(bot):
@@ -34,6 +37,8 @@ def register(bot):
         bot.send_message(uid,
             "👋 <b>Хош келдиңиз!</b>\nS6-DI-23 группасы сизлерди көргенимнен қууанышлыман.\nБөлимди таңлаңыз:",
             reply_markup=main_menu(uid))
+        if message.chat.type == "private":
+            threading.Thread(target=ensure_chat_menu, args=(bot, uid), daemon=True).start()
 
     @bot.message_handler(commands=["help"])
     def help_cmd(message):
@@ -115,3 +120,24 @@ def register(bot):
             "🎓 <b>HEMIS Student Cabinet</b>\n\n"
             "Нукус ИИ студент кабинетине кириу үшын батырманы басыңыз:",
             reply_markup=markup)
+
+    @bot.message_handler(commands=["fixmenu"])
+    def fixmenu_cmd(message):
+        """Тек admin: менюди қайта орнатып, Telegram-да не тұрғанын көрсетеди."""
+        uid = message.from_user.id
+        if message.chat.type != "private" or not is_admin(uid):
+            return
+        report = setup_all_menus(bot, chat_id=uid)
+        bad = [t for ok, t in report if not ok]
+        st = read_state(bot, uid)
+        cmds = st["commands"]
+        cmds_txt = " ".join("/" + c for c in cmds) if isinstance(cmds, list) else str(cmds)
+        text = ("🔧 <b>Меню тексериу</b>\n\n"
+                f"Menu button: <b>{html.escape(str(st['button']))}</b>\n"
+                f"Командалар: {html.escape(cmds_txt)}\n"
+                f"Орнатыу: {len(report) - len(bad)}/{len(report)} қадем OK")
+        if bad:
+            text += "\n\n❌ <b>Қателер:</b>\n" + "\n".join(html.escape(x[:200]) for x in bad[:5])
+        else:
+            text += "\n\n✅ Тайын. Чатты жауып қайта ашыңыз."
+        bot.send_message(uid, text, reply_markup=main_menu(uid))
