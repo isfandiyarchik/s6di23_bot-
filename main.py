@@ -58,23 +58,20 @@ start_scheduler(
     cleanup_ai_fn=cleanup_ai_history
 )
 
-# ── TELEGRAM МЕНЮ (☰ командалар тізімі) ───────────────────────
+# ── TELEGRAM МЕНЮ (☰ командалар дизими) ───────────────────────
 def setup_bot_menu():
-    """BotFather-дағы HEMIS web-app батырмасын командалар менюине қайтарады
-    және 5 команданы кодтан орнатады (BotFather-мен хәр қашан сәйкес болады)."""
-    from telebot import types as tg_types
+    """HEMIS web-app батырмасын командалар менюине қайтарады, 5 команданы
+    барлық тил/scope үшын орнатады. Фонда жұмыс ислейди (серверди тоқтатпайды)."""
     try:
-        bot.set_my_commands([
-            tg_types.BotCommand("start", "🏠 Ботты баслау"),
-            tg_types.BotCommand("ai", "🤖 AI Көмекши"),
-            tg_types.BotCommand("hemis", "🎓 HEMIS кабинет"),
-            tg_types.BotCommand("contacts", "📞 Байланыс"),
-            tg_types.BotCommand("contract", "💰 Контракт"),
-        ])
-        bot.set_chat_menu_button(menu_button=tg_types.MenuButtonCommands())
-        logger.info("✅ Telegram меню орнатылды: 5 команда")
+        from handlers.menu_setup import setup_all_menus
+        report = setup_all_menus(bot)
+        bad = [t for ok, t in report if not ok]
+        if bad:
+            logger.warning("Menu орнатыу қателери: " + " | ".join(bad))
+        else:
+            logger.info(f"✅ Telegram меню орнатылды ({len(report)} қадам)")
     except Exception as e:
-        logger.warning(f"setup_bot_menu қатесі: {e}")
+        logger.warning(f"setup_bot_menu қатеси: {e}")
 
 # ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
@@ -100,7 +97,7 @@ if __name__ == "__main__":
                 logger.error(f"Polling қате: {e}", exc_info=True)
                 time.sleep(5)
 
-    setup_bot_menu()
+    Thread(target=setup_bot_menu, daemon=True).start()
     Thread(target=run_bot, daemon=True).start()
     logger.info("🤖 S6-DI-23 Bot иске қосылды!")
 
