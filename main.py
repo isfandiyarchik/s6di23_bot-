@@ -15,6 +15,8 @@ from database import init_db, now_uz
 from scheduler import start_scheduler
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+from logsafe import install_log_redaction, install_html_safety_net
+install_log_redaction()   # токен/килт логқа түспейди
 logger = logging.getLogger(__name__)
 
 # ── BOT & FLASK ───────────────────────────────────────────────
@@ -23,6 +25,7 @@ if not TOKEN:
     raise RuntimeError("BOT_TOKEN environment variable is not set!")
 
 bot = telebot.TeleBot(TOKEN, parse_mode="HTML")
+install_html_safety_net(bot)   # HTML қатеси болса — қарапайым тект пенен жибереди
 app = Flask(__name__)
 
 @app.route("/")
