@@ -73,9 +73,6 @@ def init_db():
         """CREATE TABLE IF NOT EXISTS students (
             id BIGINT PRIMARY KEY, username TEXT, last_active TIMESTAMP,
             full_name TEXT, birth_date TEXT, phone TEXT, hemis TEXT, started INTEGER DEFAULT 0)""",
-        """CREATE TABLE IF NOT EXISTS user_news (
-            id SERIAL PRIMARY KEY, content TEXT, author_id BIGINT,
-            author_username TEXT, date TIMESTAMP DEFAULT NOW())""",
         """CREATE TABLE IF NOT EXISTS materials (
             id SERIAL PRIMARY KEY, file_id TEXT, file_type TEXT,
             uploader_id BIGINT, uploader_username TEXT, date TIMESTAMP DEFAULT NOW())""",
